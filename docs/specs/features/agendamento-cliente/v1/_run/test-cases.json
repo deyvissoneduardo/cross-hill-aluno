@@ -1,0 +1,839 @@
+{
+  "schema_version": 1,
+  "framework": "sdd",
+  "feature": "agendamento-cliente",
+  "version": "v1",
+  "atualizado_em": "2026-08-11T14:30:59.635Z",
+  "stack_discovery": {
+    "frente": "web",
+    "framework": "Next.js App Router 16.3",
+    "react": "19.2.8",
+    "typescript": "strict",
+    "styling": "Tailwind CSS 4",
+    "test_suite_existente": false,
+    "test_runner_detectado": "nenhum",
+    "suite_recomendada": {
+      "unit": "Vitest + React Testing Library",
+      "component_integration": "Vitest + React Testing Library + MSW",
+      "e2e": "Playwright",
+      "accessibility": "axe integrado a Playwright ou Testing Library"
+    }
+  },
+  "casos_teste": [
+    {
+      "id": "CT-001",
+      "tipo": "component",
+      "categoria": "contrato_ui",
+      "titulo": "Primeira etapa solicita somente nome e telefone, sem conta ou credenciais",
+      "criterios_aceitacao_validados": [
+        "CA-01"
+      ],
+      "invariant": "Primeira tela deve solicitar apenas nome e telefone, sem campos de conta.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T11"
+    },
+    {
+      "id": "CT-002",
+      "tipo": "component",
+      "categoria": "validacao_negativa",
+      "titulo": "Nome ou telefone ausentes bloqueiam o avanco",
+      "criterios_aceitacao_validados": [
+        "CA-02"
+      ],
+      "invariant": "Campos obrigatorios ausentes bloqueiam avanço e orientam correção.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T11"
+    },
+    {
+      "id": "CT-003",
+      "tipo": "component",
+      "categoria": "caminho_feliz",
+      "titulo": "Nome e telefone validos permitem avancar",
+      "criterios_aceitacao_validados": [
+        "CA-03"
+      ],
+      "invariant": "Identificação válida avança para escolha.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T11"
+    },
+    {
+      "id": "CT-004",
+      "tipo": "unit",
+      "categoria": "validacao_negativa",
+      "titulo": "Normalizacao e validacao rejeitam telefone invalido",
+      "criterios_aceitacao_validados": [
+        "CA-02",
+        "CA-03"
+      ],
+      "invariant": "Telefone deve ser normalizável e inválidos devem falhar.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T3"
+    },
+    {
+      "id": "CT-005",
+      "tipo": "service-integration",
+      "categoria": "contrato_dados",
+      "titulo": "Repository de profissionais retorna somente profissionais ativos",
+      "criterios_aceitacao_validados": [
+        "CA-04"
+      ],
+      "invariant": "Lista pública contém somente profissionais ativos.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T9"
+    },
+    {
+      "id": "CT-006",
+      "tipo": "component-integration",
+      "categoria": "estado_vazio",
+      "titulo": "Ausencia de profissionais ativos mostra indisponibilidade sem detalhes administrativos",
+      "criterios_aceitacao_validados": [
+        "CA-04",
+        "CA-15"
+      ],
+      "invariant": "Vazio de profissionais não revela detalhes administrativos.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T12"
+    },
+    {
+      "id": "CT-007",
+      "tipo": "component-integration",
+      "categoria": "contrato_ui",
+      "titulo": "A escolha de profissional habilita somente dias liberados",
+      "criterios_aceitacao_validados": [
+        "CA-05"
+      ],
+      "invariant": "Somente dias liberados aparecem selecionáveis.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T12"
+    },
+    {
+      "id": "CT-008",
+      "tipo": "component-integration",
+      "categoria": "estado_vazio",
+      "titulo": "Sem dias liberados mostra mensagem contextual",
+      "criterios_aceitacao_validados": [
+        "CA-05"
+      ],
+      "invariant": "Sem dias liberados bloqueia seleção e orienta usuário.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T12"
+    },
+    {
+      "id": "CT-009",
+      "tipo": "component-integration",
+      "categoria": "contrato_ui",
+      "titulo": "Somente horarios elegiveis aparecem como selecionaveis",
+      "criterios_aceitacao_validados": [
+        "CA-06"
+      ],
+      "invariant": "Somente horários elegíveis são selecionáveis.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T12"
+    },
+    {
+      "id": "CT-010",
+      "tipo": "component-integration",
+      "categoria": "estado_vazio",
+      "titulo": "Sem horarios elegiveis mostra mensagem contextual",
+      "criterios_aceitacao_validados": [
+        "CA-06"
+      ],
+      "invariant": "Sem horários bloqueia revisão e orienta usuário.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T12"
+    },
+    {
+      "id": "CT-011",
+      "tipo": "service-integration",
+      "categoria": "regra_negocio",
+      "titulo": "Duas solicitacoes para o mesmo slot podem nascer aguardando confirmacao",
+      "criterios_aceitacao_validados": [
+        "CA-07",
+        "CA-12",
+        "CA-15"
+      ],
+      "invariant": "Solicitações concorrentes podem aguardar sem expor terceiros.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T8"
+    },
+    {
+      "id": "CT-012",
+      "tipo": "service-integration",
+      "categoria": "regra_negocio",
+      "titulo": "Confirmacao administrativa permite apenas uma solicitacao por slot",
+      "criterios_aceitacao_validados": [
+        "CA-08"
+      ],
+      "invariant": "Apenas uma solicitação por slot pode ser confirmada.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T8"
+    },
+    {
+      "id": "CT-013",
+      "tipo": "service-integration",
+      "categoria": "validacao_negativa",
+      "titulo": "Mesmo telefone com solicitacao ativa no mesmo dia e bloqueado",
+      "criterios_aceitacao_validados": [
+        "CA-09"
+      ],
+      "invariant": "Mesmo telefone não cria segunda solicitação ativa no mesmo dia.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T8"
+    },
+    {
+      "id": "CT-014",
+      "tipo": "service-integration",
+      "categoria": "regra_negocio",
+      "titulo": "Solicitacao cancelada nao bloqueia nova solicitacao no mesmo dia",
+      "criterios_aceitacao_validados": [
+        "CA-10"
+      ],
+      "invariant": "Solicitação cancelada não bloqueia nova solicitação no mesmo dia.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T4"
+    },
+    {
+      "id": "CT-015",
+      "tipo": "component",
+      "categoria": "contrato_ui",
+      "titulo": "Revisao apresenta resumo completo antes do envio final",
+      "criterios_aceitacao_validados": [
+        "CA-11"
+      ],
+      "invariant": "Revisão apresenta todos os dados escolhidos.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T13"
+    },
+    {
+      "id": "CT-016",
+      "tipo": "unit",
+      "categoria": "validacao_negativa",
+      "titulo": "Reducer nao permite revisao com selecao incompleta",
+      "criterios_aceitacao_validados": [
+        "CA-11"
+      ],
+      "invariant": "Estado incompleto não transiciona para revisão.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T11"
+    },
+    {
+      "id": "CT-017",
+      "tipo": "e2e",
+      "categoria": "fluxo_principal",
+      "titulo": "Cliente conclui solicitacao e ve sucesso aguardando confirmacao",
+      "criterios_aceitacao_validados": [
+        "CA-03",
+        "CA-04",
+        "CA-05",
+        "CA-06",
+        "CA-11",
+        "CA-12",
+        "CA-17"
+      ],
+      "invariant": "Fluxo completo termina com sucesso aguardando confirmação.",
+      "owning_layer": "e2e",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T14"
+    },
+    {
+      "id": "CT-018",
+      "tipo": "component-integration",
+      "categoria": "falha_recuperavel",
+      "titulo": "Falha no envio mostra mensagem amigavel e permite nova tentativa",
+      "criterios_aceitacao_validados": [
+        "CA-12"
+      ],
+      "invariant": "Falha no envio mantém fluxo recuperável sem sucesso falso.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T13"
+    },
+    {
+      "id": "CT-019",
+      "tipo": "component-integration",
+      "categoria": "configuracao_publica",
+      "titulo": "Tela de sucesso usa textos publicos configurados quando existirem",
+      "criterios_aceitacao_validados": [
+        "CA-13",
+        "CA-17"
+      ],
+      "invariant": "Textos configurados aparecem preservando aguardando confirmação.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T13"
+    },
+    {
+      "id": "CT-020",
+      "tipo": "component-integration",
+      "categoria": "fallback_seguro",
+      "titulo": "Tela de sucesso usa fallback seguro sem configuracao publica",
+      "criterios_aceitacao_validados": [
+        "CA-14",
+        "CA-17"
+      ],
+      "invariant": "Fallback seguro comunica aguardando confirmação.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T13"
+    },
+    {
+      "id": "CT-021",
+      "tipo": "e2e",
+      "categoria": "privacidade",
+      "titulo": "Fluxo nao revela nomes, telefones, quantidade ou detalhes de outros clientes",
+      "criterios_aceitacao_validados": [
+        "CA-15"
+      ],
+      "invariant": "UI não revela dados de terceiros em slot concorrente.",
+      "owning_layer": "e2e",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T14"
+    },
+    {
+      "id": "CT-022",
+      "tipo": "e2e",
+      "categoria": "responsividade_acessibilidade",
+      "titulo": "Fluxo permanece utilizavel em viewport mobile pequeno",
+      "criterios_aceitacao_validados": [
+        "CA-16"
+      ],
+      "invariant": "Fluxo é legível e acionável em 320px.",
+      "owning_layer": "e2e",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T14"
+    },
+    {
+      "id": "CT-023",
+      "tipo": "e2e",
+      "categoria": "acessibilidade_negativa",
+      "titulo": "Reduced motion nao impede uso nem oculta estados",
+      "criterios_aceitacao_validados": [
+        "CA-16"
+      ],
+      "invariant": "Estados permanecem perceptíveis sem motion.",
+      "owning_layer": "e2e",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "http",
+      "task_id": "T14"
+    },
+    {
+      "id": "CT-024",
+      "tipo": "SEGURANCA",
+      "categoria": "abuso",
+      "titulo": "Limite antiabuso retorna erro genérico",
+      "criterios_aceitacao_validados": [
+        "CA-12",
+        "CA-15"
+      ],
+      "invariant": "Limite operacional não revela regra interna.",
+      "owning_layer": "service-integration",
+      "existing_suite": "app/api/public/agendamentos/route.test.ts",
+      "real_execution_boundary": "fake-store",
+      "task_id": "T6",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Limite operacional não revela regra interna.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-025",
+      "tipo": "service-integration",
+      "categoria": "regra_negocio",
+      "titulo": "Store bloqueia mesmo telefone no mesmo dia",
+      "criterios_aceitacao_validados": [
+        "CA-09",
+        "CA-12"
+      ],
+      "invariant": "Mesmo telefone normalizado não tem duas solicitações ativas no mesmo dia.",
+      "owning_layer": "service-integration",
+      "existing_suite": "lib/firebase/agendamentoStore.test.ts",
+      "real_execution_boundary": "fake-store",
+      "task_id": "T4",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Mesmo telefone normalizado não tem duas solicitações ativas no mesmo dia.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-026",
+      "tipo": "service-integration",
+      "categoria": "regra_negocio",
+      "titulo": "Store permite pendentes no mesmo slot para clientes diferentes",
+      "criterios_aceitacao_validados": [
+        "CA-07",
+        "CA-15"
+      ],
+      "invariant": "Pendentes de terceiros não tornam o slot inelegível na frente cliente.",
+      "owning_layer": "service-integration",
+      "existing_suite": "lib/firebase/agendamentoStore.test.ts",
+      "real_execution_boundary": "fake-store",
+      "task_id": "T4",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Pendentes de terceiros não tornam o slot inelegível na frente cliente.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-027",
+      "tipo": "unit",
+      "categoria": "infraestrutura_teste",
+      "titulo": "Vitest executa TypeScript strict com JSX em jsdom",
+      "criterios_aceitacao_validados": [
+        "CA-01",
+        "CA-02",
+        "CA-03"
+      ],
+      "invariant": "Suíte unitária executa TS/TSX com jsdom e matchers DOM.",
+      "owning_layer": "unit",
+      "existing_suite": "app/agendamento/__tests__/vitest-smoke.test.tsx",
+      "real_execution_boundary": "none",
+      "task_id": "T1",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Suíte unitária executa TS/TSX com jsdom e matchers DOM.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-028",
+      "tipo": "unit",
+      "categoria": "seguranca_server_only",
+      "titulo": "Firebase admin permanece server-only",
+      "criterios_aceitacao_validados": [
+        "CA-15"
+      ],
+      "invariant": "Credenciais Firebase server-side nunca são lidas por módulos client-side.",
+      "owning_layer": "unit",
+      "existing_suite": "lib/firebase/admin.test.ts",
+      "real_execution_boundary": "none",
+      "task_id": "T3",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Credenciais Firebase server-side nunca são lidas por módulos client-side.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-029",
+      "tipo": "unit",
+      "categoria": "validacao_negativa",
+      "titulo": "Validação de nome normaliza espaços e rejeita valores inválidos",
+      "criterios_aceitacao_validados": [
+        "CA-02",
+        "CA-03"
+      ],
+      "invariant": "Nome só é aceito quando normalizado e seguro para exibição.",
+      "owning_layer": "unit",
+      "existing_suite": "app/agendamento/validation/__tests__/cliente.test.ts",
+      "real_execution_boundary": "none",
+      "task_id": "T3",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Nome só é aceito quando normalizado e seguro para exibição.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-030",
+      "tipo": "route-integration",
+      "categoria": "contrato_api_publica",
+      "titulo": "GET profissionais retorna somente campos públicos",
+      "criterios_aceitacao_validados": [
+        "CA-04",
+        "CA-15"
+      ],
+      "invariant": "Endpoint público expõe apenas profissionais ativos com DTO mínimo.",
+      "owning_layer": "route-integration",
+      "existing_suite": "app/api/public/profissionais/route.test.ts",
+      "real_execution_boundary": "http",
+      "task_id": "T5",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Endpoint público expõe apenas profissionais ativos com DTO mínimo.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-031",
+      "tipo": "route-integration",
+      "categoria": "contrato_api_publica",
+      "titulo": "GET dias retorna dias liberados sem detalhes internos",
+      "criterios_aceitacao_validados": [
+        "CA-05",
+        "CA-15"
+      ],
+      "invariant": "Endpoint público de dias retorna somente datas liberadas do profissional.",
+      "owning_layer": "route-integration",
+      "existing_suite": "app/api/public/profissionais/[profissionalId]/dias/route.test.ts",
+      "real_execution_boundary": "http",
+      "task_id": "T5",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Endpoint público de dias retorna somente datas liberadas do profissional.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-032",
+      "tipo": "route-integration",
+      "categoria": "validacao_negativa",
+      "titulo": "GET horários exige data YYYY-MM-DD",
+      "criterios_aceitacao_validados": [
+        "CA-06",
+        "CA-15"
+      ],
+      "invariant": "Consulta de horários com data inválida falha sem tocar store.",
+      "owning_layer": "route-integration",
+      "existing_suite": "app/api/public/profissionais/[profissionalId]/horarios/route.test.ts",
+      "real_execution_boundary": "http",
+      "task_id": "T5",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Consulta de horários com data inválida falha sem tocar store.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-033",
+      "tipo": "route-integration",
+      "categoria": "contrato_api_publica",
+      "titulo": "GET horários retorna pendentes elegíveis e exclui confirmados",
+      "criterios_aceitacao_validados": [
+        "CA-06",
+        "CA-07",
+        "CA-15"
+      ],
+      "invariant": "Confirmados não são oferecidos; pendentes continuam elegíveis sem sinalização.",
+      "owning_layer": "route-integration",
+      "existing_suite": "app/api/public/profissionais/[profissionalId]/horarios/route.test.ts",
+      "real_execution_boundary": "http",
+      "task_id": "T5",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Confirmados não são oferecidos; pendentes continuam elegíveis sem sinalização.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-034",
+      "tipo": "route-integration",
+      "categoria": "configuracao_publica",
+      "titulo": "GET configuração de sucesso trata textos como texto simples",
+      "criterios_aceitacao_validados": [
+        "CA-13",
+        "CA-14",
+        "CA-17"
+      ],
+      "invariant": "Configuração pública é texto simples e ausência permite fallback seguro.",
+      "owning_layer": "route-integration",
+      "existing_suite": "app/api/public/configuracao/sucesso/route.test.ts",
+      "real_execution_boundary": "http",
+      "task_id": "T5",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Configuração pública é texto simples e ausência permite fallback seguro.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-035",
+      "tipo": "unit",
+      "categoria": "contrato_api_client",
+      "titulo": "Repositories usam URLs públicas e query params codificados",
+      "criterios_aceitacao_validados": [
+        "CA-04",
+        "CA-05",
+        "CA-06",
+        "CA-15"
+      ],
+      "invariant": "Repositories consomem apenas /api/public/* sem Firebase ou credenciais.",
+      "owning_layer": "unit",
+      "existing_suite": "app/agendamento/repositories/__tests__/profissionais.integration.test.ts",
+      "real_execution_boundary": "none",
+      "task_id": "T9",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Repositories consomem apenas /api/public/* sem Firebase ou credenciais.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-036",
+      "tipo": "unit",
+      "categoria": "mapeamento_erros",
+      "titulo": "Repositories mapeiam erros HTTP e de domínio",
+      "criterios_aceitacao_validados": [
+        "CA-09",
+        "CA-12",
+        "CA-15"
+      ],
+      "invariant": "Falhas viram erros tipados sem detalhes técnicos.",
+      "owning_layer": "unit",
+      "existing_suite": "app/agendamento/repositories/__tests__/agendamentos.integration.test.ts",
+      "real_execution_boundary": "none",
+      "task_id": "T9",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Falhas viram erros tipados sem detalhes técnicos.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-037",
+      "tipo": "unit",
+      "categoria": "contrato_ui",
+      "titulo": "Botões globais expõem estados acessíveis",
+      "criterios_aceitacao_validados": [
+        "CA-16"
+      ],
+      "invariant": "Botões comunicam nome, foco, disabled e loading por semântica.",
+      "owning_layer": "unit",
+      "existing_suite": "components/ui/__tests__/buttons.test.tsx",
+      "real_execution_boundary": "none",
+      "task_id": "T10",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Botões comunicam nome, foco, disabled e loading por semântica.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-038",
+      "tipo": "unit",
+      "categoria": "contrato_ui",
+      "titulo": "SelectionCard e TimeChip comunicam estados sem depender de cor",
+      "criterios_aceitacao_validados": [
+        "CA-05",
+        "CA-06",
+        "CA-16"
+      ],
+      "invariant": "Controles selecionáveis tornam seleção e indisponibilidade acessíveis.",
+      "owning_layer": "unit",
+      "existing_suite": "components/ui/__tests__/selection.test.tsx",
+      "real_execution_boundary": "none",
+      "task_id": "T10",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Controles selecionáveis tornam seleção e indisponibilidade acessíveis.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-039",
+      "tipo": "unit",
+      "categoria": "layout_estavel",
+      "titulo": "SkeletonBlock e StepProgress preservam dimensões e semântica",
+      "criterios_aceitacao_validados": [
+        "CA-16"
+      ],
+      "invariant": "Loading reserva espaço e progresso comunica etapa.",
+      "owning_layer": "unit",
+      "existing_suite": "components/ui/__tests__/feedback.test.tsx",
+      "real_execution_boundary": "none",
+      "task_id": "T10",
+      "pre_condicoes": [],
+      "dados_entrada": {},
+      "passos": [],
+      "resultado_esperado": "Loading reserva espaço e progresso comunica etapa.",
+      "negative_companion": {
+        "presente": false
+      },
+      "precondicao_privilegiada": {
+        "presente": false
+      },
+      "observacoes": "Adicionado durante geração do task plan."
+    },
+    {
+      "id": "CT-040",
+      "tipo": "unit",
+      "categoria": "contrato_publico",
+      "titulo": "DTOs publicos excluem campos privados de terceiros",
+      "criterios_aceitacao_validados": [
+        "CA-12",
+        "CA-15"
+      ],
+      "invariant": "Contratos públicos não devem representar dados de terceiros.",
+      "owning_layer": "unit",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "none",
+      "task_id": "T2"
+    },
+    {
+      "id": "CT-041",
+      "tipo": "service-integration",
+      "categoria": "caminho_feliz",
+      "titulo": "POST valido retorna solicitacao aguardando confirmacao",
+      "criterios_aceitacao_validados": [
+        "CA-03",
+        "CA-11",
+        "CA-12"
+      ],
+      "invariant": "Solicitação válida nasce aguardando confirmação, nunca confirmada.",
+      "owning_layer": "service-integration",
+      "existing_suite": "NO_SUITE_FOUND",
+      "real_execution_boundary": "handler",
+      "task_id": "T7"
+    }
+  ],
+  "cenarios_nao_cobertos": [
+    {
+      "cenario": "Consulta, cancelamento ou remarcacao pelo cliente",
+      "motivo": "Fora do escopo da v1."
+    },
+    {
+      "cenario": "Cores configuraveis e textos configuraveis em todas as telas",
+      "motivo": "Fora do escopo da v1."
+    },
+    {
+      "cenario": "Comunicacao automatica para clientes nao confirmados",
+      "motivo": "Fora do escopo da v1."
+    }
+  ],
+  "recomendacoes": [
+    "Adicionar Vitest, Testing Library, user-event, jsdom e MSW.",
+    "Adicionar Playwright para E2E, privacidade e responsividade.",
+    "Manter mocks somente na fronteira HTTP."
+  ],
+  "mock_budget_observado": true,
+  "gates_aplicados": [
+    "invariant_first",
+    "owning_layer",
+    "real_execution",
+    "failure_means_fix_production",
+    "no_snapshot_without_contract",
+    "no_self_set_mock_assertion",
+    "negative_companion"
+  ],
+  "erros_leitura": []
+}

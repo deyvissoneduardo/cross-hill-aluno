@@ -1,0 +1,183 @@
+---
+description: Gerenciamento de estado com StatefulWidget/setState no projeto Expert Login APP
+globs: ["lib/**"]
+---
+
+# Gerenciamento de Estado - StatefulWidget
+
+## Objetivo
+Padronizar o uso de StatefulWidget e setState como padrão de gerenciamento de estado do projeto, garantindo código limpo e performático.
+
+## Regras
+
+### Padrão Atual
+O projeto utiliza **StatefulWidget com setState** como estratégia principal de gerenciamento de estado. Não há biblioteca de state management (BLoC, Provider, Riverpod, etc.) instalada.
+
+### Estrutura de Estado
+
+**Estado Local** - Variáveis de estado no State:
+```dart
+class _MyPageState extends State<MyPage> {
+  bool _isLoading = false;
+  String? _errorMessage;
+  List<Item> _items = [];
+  
+  // Estados de formulário
+  final _formKey = GlobalKey<FormState>();
+  final _controller = TextEditingController();
+}
+```
+
+### Padrões de Loading/Error/Success
+
+Implementar estados explícitos para operações assíncronas:
+```dart
+class _MyPageState extends State<MyPage> {
+  bool _isLoading = false;
+  String? _errorMessage;
+  MyData? _data;
+  
+  Future<void> _fetchData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      final result = await _repository.getData();
+      setState(() {
+        _data = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Erro ao carregar dados';
+        _isLoading = false;
+      });
+    }
+  }
+}
+```
+
+### Boas Práticas com setState
+
+**Agrupar alterações** em um único setState:
+```dart
+// ✅ CORRETO
+setState(() {
+  _isLoading = false;
+  _data = result;
+  _errorMessage = null;
+});
+
+// ❌ ERRADO - múltiplos rebuilds
+setState(() => _isLoading = false);
+setState(() => _data = result);
+setState(() => _errorMessage = null);
+```
+
+**Verificar mounted** antes de setState em callbacks assíncronos:
+```dart
+Future<void> _loadData() async {
+  final data = await _repository.fetch();
+  if (!mounted) return; // Previne erro se widget foi descartado
+  setState(() => _data = data);
+}
+```
+
+### Lifecycle Management
+
+**initState** - Inicialização e fetch inicial:
+```dart
+@override
+void initState() {
+  super.initState();
+  _loadData();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Código que precisa do context
+  });
+}
+```
+
+**dispose** - Limpar recursos:
+```dart
+@override
+void dispose() {
+  _controller.dispose();
+  _scrollController.dispose();
+  _subscription?.cancel();
+  super.dispose();
+}
+```
+
+### Separação de Responsabilidades
+
+- **State** gerencia apenas estado de UI e orquestra chamadas
+- **Repository** contém lógica de acesso a dados
+- **Helpers** contêm lógica de negócio reutilizável
+
+```dart
+// No State - apenas orquestração
+Future<void> _onLogin() async {
+  if (!_formKey.currentState!.validate()) return;
+  
+  setState(() => _isLoading = true);
+  final success = await _repository.login(email, password, context);
+  
+  if (!mounted) return;
+  setState(() => _isLoading = false);
+  
+  if (success) {
+    Navigator.pushReplacement(context, ...);
+  }
+}
+```
+
+## Anti-padrões
+
+- ❌ Lógica de negócio complexa dentro do State
+- ❌ setState sem verificar `mounted` em callbacks assíncronos
+- ❌ Múltiplos setState em sequência (causa múltiplos rebuilds)
+- ❌ Estado compartilhado entre páginas sem mecanismo adequado
+- ❌ Controllers não sendo disposed
+- ❌ Fetch de dados no `build()`
+- ❌ setState vazio ou sem mudança real de estado
+
+## Evitar Rebuilds Desnecessários
+
+### Extrair Widgets Filhos
+Widgets que não dependem do estado pai devem ser extraídos:
+```dart
+// ✅ Widget filho não rebuilda quando pai muda
+class _ParentState extends State<Parent> {
+  int _counter = 0;
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('$_counter'),
+        const HeavyChildWidget(), // const evita rebuild
+      ],
+    );
+  }
+}
+```
+
+### Usar const Widgets
+```dart
+// ✅ Const widgets não são reconstruídos
+const SizedBox(height: 16),
+const Divider(),
+const MyStaticWidget(),
+```
+
+## Checklist
+
+- [ ] Estados de loading/error/success implementados
+- [ ] setState agrupa todas as mudanças necessárias
+- [ ] Verificação de `mounted` antes de setState assíncrono
+- [ ] Controllers e subscriptions disposed corretamente
+- [ ] Widgets filhos extraídos quando possível
+- [ ] Uso de const para widgets estáticos
+- [ ] Lógica de negócio em repositories, não no State

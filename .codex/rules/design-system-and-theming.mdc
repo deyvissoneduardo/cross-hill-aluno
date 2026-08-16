@@ -1,0 +1,197 @@
+---
+description: Sistema de design e temas do projeto Expert Login APP
+globs: ["lib/app/core/theme/**", "lib/app/core/widgets/**"]
+---
+
+# Design System e Temas
+
+## Objetivo
+Padronizar cores, estilos e componentes visuais do projeto Expert System, garantindo consistência visual e facilitando manutenção.
+
+## Regras
+
+### Estrutura de Arquivos
+
+```
+lib/app/core/
+├── theme/
+│   └── theme_default.dart       # ThemeData global
+└── widgets/
+    ├── app_colors.dart          # Paleta de cores
+    ├── *_widget.dart            # Widgets reutilizáveis
+    └── *_widget_global.dart     # Widgets com sufixo global
+```
+
+### Paleta de Cores - AppColors
+
+Todas as cores do app devem estar centralizadas em `AppColors`:
+
+```dart
+class AppColors {
+  AppColors._();
+  
+  // Cores principais
+  static const blueBlack = Color(0XFF18364E);  // Background principal
+  static const blue = Color(0XFF2B83B2);        // Cor de destaque
+  
+  // Estados
+  static const green = Color(0XFF64DA2C);       // Sucesso
+  static const red = Color(0xFFF44336);         // Erro
+  static const yellowAccent = Colors.yellow;    // Atenção
+  
+  // Neutros
+  static const grey = Color(0XFFd9d9d9);
+  static const greyLigth = Color(0xffCADDE4);
+  static const black = Colors.black;
+  static const white = Colors.white;
+}
+```
+
+### Uso de Cores
+
+**Correto** - Usar AppColors:
+```dart
+Container(
+  color: AppColors.blueBlack,
+  child: Text(
+    'Título',
+    style: TextStyle(color: AppColors.white),
+  ),
+)
+```
+
+**Proibido** - Cores hardcoded:
+```dart
+// ❌ ERRADO
+Container(color: Color(0XFF18364E))
+Container(color: Colors.blue)
+```
+
+### ThemeData Global
+
+O tema é definido em `ThemeDefault.themeData`:
+
+```dart
+class ThemeDefault {
+  ThemeDefault._();
+  
+  static ThemeData themeData = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+    primaryColor: Colors.blue,
+    // ...
+  );
+}
+```
+
+Uso no app:
+```dart
+MaterialApp(
+  theme: ThemeDefault.themeData,
+  // ...
+)
+```
+
+### Widgets Globais Disponíveis
+
+Localização: `lib/app/core/widgets/`
+
+| Widget | Propósito |
+|--------|-----------|
+| `AppBarWidgetGlobal` | AppBar padrão do app |
+| `BtnSaveWidget` | Botão de salvar |
+| `BtnProntoWidgetGlobal` | Botão "Pronto" |
+| `ButtonConfirmWidgetGlobal` | Botão de confirmação |
+| `TextButtonCancelWidgetGlobal` | Botão de cancelar texto |
+| `ContainerColorWidgetGlobal` | Container com cor padrão |
+| `CustomInput` | Input customizado |
+| `DropdownWidget` | Dropdown padrão |
+| `ShowLoaderDialogGlobalWidget` | Dialog de loading |
+| `ShowDialogWidget` | Dialog genérico |
+| `HeaderWidget` | Cabeçalho de seções |
+| `CameraWidget` | Componente de câmera |
+| `GalleryWidget` | Galeria de imagens |
+
+### Criando Novos Widgets Globais
+
+1. Criar em `lib/app/core/widgets/`
+2. Seguir nomenclatura `*_widget.dart` ou `*_widget_global.dart`
+3. Usar `AppColors` para cores
+4. Documentar parâmetros obrigatórios
+5. Adicionar ao export barrel se houver
+
+```dart
+// lib/app/core/widgets/card_info_widget.dart
+class CardInfoWidget extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  
+  const CardInfoWidget({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.white,
+      child: ListTile(
+        title: Text(title),
+        subtitle: subtitle != null ? Text(subtitle!) : null,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+```
+
+### Espaçamentos Padrão
+
+Usar valores consistentes:
+```dart
+// Espaçamentos comuns
+const double spacingXS = 4.0;
+const double spacingS = 8.0;
+const double spacingM = 16.0;
+const double spacingL = 24.0;
+const double spacingXL = 32.0;
+
+// Uso
+SizedBox(height: spacingM),
+Padding(padding: EdgeInsets.all(spacingM)),
+```
+
+### Tipografia
+
+Usar estilos do Theme quando possível:
+```dart
+Text(
+  'Título',
+  style: Theme.of(context).textTheme.titleLarge,
+)
+
+Text(
+  'Corpo',
+  style: Theme.of(context).textTheme.bodyMedium,
+)
+```
+
+## Anti-padrões
+
+- ❌ Cores hardcoded (usar AppColors)
+- ❌ Estilos de texto inline repetidos
+- ❌ Widgets duplicados entre features (centralizar em core)
+- ❌ Ignorar o ThemeData e criar estilos paralelos
+- ❌ Espaçamentos "números mágicos" espalhados
+
+## Checklist
+
+- [ ] Novas cores adicionadas em AppColors
+- [ ] Widgets reutilizáveis em core/widgets
+- [ ] Cores referenciadas via AppColors, não hardcoded
+- [ ] Espaçamentos usando valores consistentes
+- [ ] Novos widgets seguem padrão de nomenclatura
+- [ ] ThemeData utilizado quando aplicável

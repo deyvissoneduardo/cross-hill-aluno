@@ -1,0 +1,30 @@
+feature: "Agendamento do cliente sem conta"
+current_step: execution
+variant: web
+source: "recommended"
+source_note: ""
+steps:
+  prd:
+    status: completed
+    summary: "9 US, 17 CA. Cliente solicita agendamento sem conta e aguarda confirmação administrativa."
+  tech_alignment:
+    status: skipped
+  tech_spec:
+    status: completed
+    variant: web
+    summary: "AppointmentFlow, provider/reducer, repositories, Route Handlers BFF publicos, 0 RPCs/endpoints backend externos, tabelas: N/A"
+  design:
+    status: completed
+    variant: web
+  validation:
+    status: completed
+    summary: "challenge-spec: 6 questões, 6 ajustes inline"
+  task_plan:
+    status: completed
+    summary: "14 tasks, 4 fases, 0 paralelizáveis. US cobertas: 9/9; tasks high quebradas em low/medium"
+  execution:
+    status: in_progress
+    tasks_total: 14
+    tasks_completed: 5
+    tasks_blocked: 0
+    summary: "T3 desbloqueada e T10 concluída (retomadas de sessão anterior). T4 concluída após 2 ciclos de correção. T5 e T6 liberadas para execução (Fase 2)."

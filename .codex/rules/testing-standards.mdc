@@ -1,0 +1,235 @@
+---
+description: Padrões de testes para o projeto Expert Login APP
+globs: ["test/**"]
+---
+
+# Padrões de Testes
+
+## Objetivo
+Estabelecer convenções para escrita de testes, estrutura de arquivos e estratégias de mock para garantir qualidade do código.
+
+## Regras
+
+### Tipos de Teste
+
+| Tipo | Localização | Propósito |
+|------|-------------|-----------|
+| Unit | `test/unit/` | Testar lógica isolada (helpers, models, utils) |
+| Widget | `test/widget/` | Testar widgets isolados |
+| Integration | `integration_test/` | Testar fluxos completos |
+
+### Estrutura de Pastas de Teste
+
+```
+test/
+├── unit/
+│   ├── models/
+│   │   └── login_model_test.dart
+│   ├── helpers/
+│   │   └── date_time_helpers_test.dart
+│   └── repositories/
+│       └── login_repository_test.dart
+│
+├── widget/
+│   ├── auth/
+│   │   └── login_page_test.dart
+│   └── core/
+│       └── btn_save_widget_test.dart
+│
+├── mocks/
+│   ├── mock_repositories.dart
+│   └── mock_services.dart
+│
+└── fixtures/
+    └── json/
+        └── login_response.json
+
+integration_test/
+└── auth_flow_test.dart
+```
+
+### Nomenclatura de Arquivos de Teste
+
+- Sufixo `_test.dart` obrigatório
+- Nome espelha arquivo testado: `login_page.dart` → `login_page_test.dart`
+
+### Estrutura de um Teste
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('LoginModel', () {
+    late LoginModel sut; // System Under Test
+    
+    setUp(() {
+      sut = LoginModel(...);
+    });
+    
+    tearDown(() {
+      // Limpeza se necessário
+    });
+    
+    test('deve retornar nome formatado quando uniqueName válido', () {
+      // Arrange
+      final model = LoginModel(uniqueName: 'João Silva');
+      
+      // Act
+      final result = model.formattedName;
+      
+      // Assert
+      expect(result, equals('João Silva'));
+    });
+    
+    test('deve lançar exceção quando email inválido', () {
+      expect(
+        () => LoginModel(email: 'invalido'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+  });
+}
+```
+
+### Widget Tests
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('BtnSaveWidget', () {
+    testWidgets('deve exibir texto correto', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: BtnSaveWidget(text: 'Salvar'),
+          ),
+        ),
+      );
+      
+      expect(find.text('Salvar'), findsOneWidget);
+    });
+    
+    testWidgets('deve chamar onPressed ao clicar', (tester) async {
+      var pressed = false;
+      
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: BtnSaveWidget(
+              text: 'Salvar',
+              onPressed: () => pressed = true,
+            ),
+          ),
+        ),
+      );
+      
+      await tester.tap(find.byType(ElevatedButton));
+      expect(pressed, isTrue);
+    });
+  });
+}
+```
+
+### Mocks vs Fakes
+
+**Usar Mock quando:**
+- Precisa verificar chamadas de métodos
+- Quer controlar retornos específicos
+- Testa interações com dependências
+
+**Usar Fake quando:**
+- Precisa de implementação funcional simplificada
+- Estado precisa persistir entre chamadas
+
+```dart
+// Mock simples
+class MockLoginRepository implements ILoginRepository {
+  bool loginCalled = false;
+  bool shouldSucceed = true;
+  
+  @override
+  Future<bool> login(String email, String senha, BuildContext ctx) async {
+    loginCalled = true;
+    return shouldSucceed;
+  }
+  
+  // ... outros métodos
+}
+```
+
+### Setup GetIt para Testes
+
+```dart
+void main() {
+  setUp(() {
+    GetIt.I.reset();
+    GetIt.I.registerSingleton<ILoginRepository>(MockLoginRepository());
+  });
+  
+  tearDown(() {
+    GetIt.I.reset();
+  });
+  
+  // testes...
+}
+```
+
+### Cobertura Alvo
+
+- **Mínimo recomendado**: 60% de cobertura
+- **Prioridade**: Models, Helpers, Repositories
+- **Verificar cobertura**: `flutter test --coverage`
+
+## Anti-padrões
+
+- ❌ Testes dependentes de ordem de execução
+- ❌ Testes que fazem chamadas reais de rede
+- ❌ Testes sem assertions claras
+- ❌ Testar implementação ao invés de comportamento
+- ❌ Ignorar testes flaky sem investigar causa
+- ❌ Mocks que retornam sempre os mesmos valores sem variar cenários
+
+## Fixtures e Seeds
+
+Armazenar dados de teste em arquivos JSON:
+```dart
+// test/fixtures/json/login_response.json
+{
+  "id": "123",
+  "email": "test@test.com",
+  "uniqueName": "Test User"
+}
+
+// No teste
+final jsonString = File('test/fixtures/json/login_response.json').readAsStringSync();
+final data = json.decode(jsonString);
+```
+
+## Execução
+
+```bash
+# Todos os testes
+flutter test
+
+# Com cobertura
+flutter test --coverage
+
+# Arquivo específico
+flutter test test/unit/models/login_model_test.dart
+
+# Testes de integração
+flutter test integration_test/
+```
+
+## Checklist
+
+- [ ] Nome do arquivo termina com `_test.dart`
+- [ ] Testes agrupados logicamente com `group()`
+- [ ] Padrão AAA (Arrange-Act-Assert) seguido
+- [ ] Mocks/Fakes criados para dependências externas
+- [ ] GetIt resetado no setUp/tearDown
+- [ ] Sem chamadas de rede reais nos testes
+- [ ] Assertions claras e específicas
+- [ ] Testes passam de forma isolada e em conjunto

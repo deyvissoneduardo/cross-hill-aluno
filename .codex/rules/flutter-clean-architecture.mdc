@@ -1,0 +1,121 @@
+---
+description: Arquitetura em camadas do projeto Expert Login APP
+globs: ["lib/**"]
+---
+
+# Arquitetura Flutter - Clean Architecture Simplificada
+
+## Objetivo
+Definir a estrutura de camadas e direções de dependência para manter o código organizado, testável e escalável.
+
+## Estrutura por Feature
+
+```
+lib/
+├── main.dart                    # Entry point
+├── firebase_options.dart        # Config Firebase
+└── app/
+    ├── core/                    # Código compartilhado global
+    │   ├── extensions/          # Extensions Dart
+    │   ├── helpers/             # Utilitários e funções auxiliares
+    │   ├── notifications/       # Setup de notificações
+    │   ├── theme/               # Tema e estilos globais
+    │   └── widgets/             # Widgets reutilizáveis globais
+    │
+    ├── models/                  # Modelos de dados (DTOs)
+    │   └── [feature]/           # Modelos agrupados por feature
+    │
+    ├── modules/                 # Camada de Apresentação (UI)
+    │   └── [feature]/
+    │       ├── [feature]_page.dart
+    │       ├── pages/           # Sub-páginas da feature
+    │       ├── widgets/         # Widgets específicos da feature
+    │       └── helpers/         # Helpers específicos da feature
+    │
+    └── repositories/            # Camada de Dados
+        └── [feature]/
+            ├── i_[feature]_repository.dart    # Interface (contrato)
+            └── [feature]_repository_impl.dart # Implementação
+```
+
+## Regras
+
+### Camadas e Responsabilidades
+
+**Core (`lib/app/core/`)**
+- Código compartilhado entre todas as features
+- Não deve depender de nenhuma feature específica
+- Contém: theme, widgets globais, helpers, extensions, notifications
+
+**Models (`lib/app/models/`)**
+- DTOs para serialização/deserialização de dados
+- Classes de request/response da API
+- Não devem conter lógica de negócio complexa
+- Usar `fromJson`/`toJson` para serialização
+
+**Modules (`lib/app/modules/`)**
+- Páginas e widgets de UI
+- Organização por feature/domínio
+- Cada feature em pasta própria
+- Widgets específicos dentro de `widgets/`
+
+**Repositories (`lib/app/repositories/`)**
+- Abstração do acesso a dados (API, Storage, DB)
+- **Sempre** criar interface + implementação separadas
+- Interface: `i_[feature]_repository.dart`
+- Implementação: `[feature]_repository_impl.dart`
+
+### Direções de Dependência
+
+```
+Modules (UI) → Repositories → Models
+     ↓              ↓
+    Core ←─────────┘
+```
+
+- ✅ Modules podem importar: `core/`, `models/`, `repositories/`
+- ✅ Repositories podem importar: `core/`, `models/`
+- ✅ Models podem importar: `core/` (apenas helpers de serialização)
+- ❌ Core NÃO deve importar: `modules/`, `repositories/`, `models/`
+- ❌ Models NÃO devem importar: `modules/`, `repositories/`
+
+### Convenções de Arquivos
+
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| Página | `*_page.dart` | `login_page.dart` |
+| Widget | `*_widget.dart` | `logo_login_widget.dart` |
+| Modelo | `*_model.dart` | `login_model.dart` |
+| Interface Repo | `i_*_repository.dart` | `i_login_repository.dart` |
+| Impl Repo | `*_repository_impl.dart` | `login_repository_impl.dart` |
+| Helper | `*_helper.dart` ou descritivo | `date_time_helpers.dart` |
+| Export | `_export_*.dart` | `_export_helpers.dart` |
+
+### Criando Nova Feature
+
+1. Criar pasta em `modules/[feature_name]/`
+2. Criar página principal `[feature]_page.dart`
+3. Se precisar de dados externos:
+   - Criar modelo em `models/[feature]/`
+   - Criar interface em `repositories/[feature]/i_[feature]_repository.dart`
+   - Criar implementação em `repositories/[feature]/[feature]_repository_impl.dart`
+
+## Anti-padrões
+
+- ❌ Lógica de API/HTTP diretamente em Pages/Widgets
+- ❌ Repository sem interface (contrato)
+- ❌ BuildContext sendo passado para repositories
+- ❌ Widgets com mais de 300 linhas (extrair sub-widgets)
+- ❌ Importar diretamente implementação sem usar interface
+- ❌ Modelos com lógica de negócio complexa
+- ❌ Core dependendo de features específicas
+
+## Checklist
+
+- [ ] Nova feature segue estrutura de pastas padrão
+- [ ] Repository possui interface + implementação
+- [ ] Direção de dependências respeitada
+- [ ] Nomenclatura de arquivos segue convenção
+- [ ] Widgets extraídos quando página fica muito grande
+- [ ] Helpers específicos da feature na pasta da feature
+- [ ] Helpers globais em `core/helpers/`

@@ -1,0 +1,172 @@
+---
+description: Padrões de commits semânticos e comunicação em pt-BR
+alwaysApply: true
+---
+
+# Commits e Linguagem
+
+## Objetivo
+Padronizar mensagens de commit usando Conventional Commits em português brasileiro, facilitando rastreabilidade e geração de changelogs.
+
+## Padrões
+
+### Formato de Commit
+
+```
+<tipo>(<escopo>): <descrição curta>
+
+<corpo opcional>
+
+<rodapé opcional>
+```
+
+### Tipos de Commit
+
+| Tipo | Quando Usar |
+|------|-------------|
+| `feat` | Nova funcionalidade para o usuário |
+| `fix` | Correção de bug |
+| `docs` | Apenas documentação |
+| `style` | Formatação, ponto-e-vírgula faltando (sem mudança de código) |
+| `refactor` | Refatoração de código de produção |
+| `test` | Adição ou correção de testes |
+| `chore` | Atualização de tasks de build, configs, etc. |
+| `perf` | Melhoria de performance |
+| `ci` | Mudanças em CI/CD |
+| `build` | Mudanças no sistema de build ou dependências |
+| `revert` | Reversão de commit anterior |
+
+### Escopo (Opcional)
+
+Indica o módulo/área afetada:
+- `auth` - Autenticação/Login
+- `financeiro` - Módulo financeiro
+- `requisicoes` - Módulo de requisições
+- `diario` - Diário de obra
+- `medicao` - Medições
+- `core` - Código compartilhado
+- `ui` - Interface geral
+- `api` - Integração com APIs
+- `db` - Banco de dados local
+
+### Regras da Descrição
+
+- Máximo 72 caracteres
+- Letra minúscula no início
+- Sem ponto final
+- Modo imperativo: "adiciona", "corrige", "remove"
+- Em português brasileiro
+
+## Exemplos Curtos
+
+### Commits Simples
+
+```
+feat(auth): adiciona validação de email no login
+
+fix(financeiro): corrige cálculo de juros em títulos atrasados
+
+docs: atualiza README com instruções de instalação
+
+style: formata arquivos do módulo de requisições
+
+refactor(core): extrai lógica de data para helper separado
+
+test(auth): adiciona testes para LoginRepository
+
+chore: atualiza dependências do pubspec.yaml
+```
+
+### Commit com Corpo
+
+```
+feat(requisicoes): implementa clonagem de requisições
+
+- Adiciona tela de seleção de itens para clonar
+- Permite editar quantidades antes de confirmar
+- Salva histórico de clonagens no Sembast
+
+Resolve #123
+```
+
+### Commit com Breaking Change
+
+```
+feat(api)!: migra endpoints para nova versão da API
+
+BREAKING CHANGE: URLs de produção e homologação alteradas.
+Requer atualização das variáveis de ambiente.
+```
+
+### Commit de Fix com Issue
+
+```
+fix(medicao): corrige erro ao salvar apontamento sem conexão
+
+O app estava travando quando tentava salvar offline.
+Agora os dados são armazenados localmente e sincronizados
+quando a conexão é restaurada.
+
+Fixes #456
+```
+
+## Padrão para Pull Requests
+
+### Título
+Mesmo formato do commit principal:
+```
+feat(auth): implementa login biométrico
+```
+
+### Descrição
+
+```markdown
+## O que foi feito
+- Implementação de login com biometria (Touch ID / Face ID)
+- Tela de configuração nas preferências
+
+## Como testar
+1. Fazer login normalmente
+2. Ir em Configurações > Segurança
+3. Ativar "Login biométrico"
+4. Fazer logout e tentar logar com biometria
+
+## Screenshots
+[se aplicável]
+
+## Checklist
+- [ ] Código segue padrões do projeto
+- [ ] Testes adicionados/atualizados
+- [ ] Documentação atualizada
+- [ ] Sem warnings do analyzer
+```
+
+### Labels Recomendadas
+
+- `feature` - Nova funcionalidade
+- `bugfix` - Correção de bug
+- `refactor` - Refatoração
+- `docs` - Documentação
+- `wip` - Work in Progress
+- `needs-review` - Aguardando revisão
+- `blocked` - Bloqueado por dependência
+
+## Anti-padrões
+
+- ❌ Commits genéricos: "update", "fix", "changes"
+- ❌ Commits muito grandes (mais de 400 linhas alteradas)
+- ❌ Misturar múltiplas funcionalidades em um commit
+- ❌ Descrições em inglês (manter pt-BR no projeto)
+- ❌ Commits sem tipo definido
+- ❌ Mensagens com mais de 72 caracteres no título
+
+## Checklist
+
+- [ ] Tipo de commit correto selecionado
+- [ ] Escopo definido quando aplicável
+- [ ] Descrição clara e em português
+- [ ] Modo imperativo usado
+- [ ] Máximo 72 caracteres no título
+- [ ] Corpo explica o quê e por quê (se necessário)
+- [ ] Issue referenciada quando aplicável
+- [ ] Um commit por funcionalidade/correção lógica

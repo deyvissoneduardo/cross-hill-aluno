@@ -1,0 +1,166 @@
+---
+description: Estrutura de pastas e organização do projeto Expert Login APP
+globs: ["lib/**", "test/**", "assets/**"]
+---
+
+# Estrutura do Projeto
+
+## Objetivo
+Documentar a organização de pastas e convenções de localização de arquivos do projeto Expert System.
+
+## Regras
+
+### Árvore de Pastas Principal
+
+```
+ExpertLoginAPP/
+├── lib/
+│   ├── main.dart                      # Entry point do app
+│   ├── firebase_options.dart          # Config gerada do Firebase
+│   └── app/
+│       ├── core/                      # Código compartilhado global
+│       │   ├── extensions/            # Extensions Dart
+│       │   ├── helpers/               # Utilitários globais
+│       │   ├── notifications/         # Setup de push notifications
+│       │   ├── theme/                 # ThemeData e estilos
+│       │   └── widgets/               # Widgets reutilizáveis globais
+│       │
+│       ├── models/                    # DTOs e modelos de dados
+│       │   ├── _export_models.dart    # Barrel file de exports
+│       │   └── [feature]/             # Modelos por feature
+│       │
+│       ├── modules/                   # Páginas/UI por feature
+│       │   └── [feature]/
+│       │       ├── [feature]_page.dart
+│       │       ├── pages/             # Sub-páginas
+│       │       ├── widgets/           # Widgets da feature
+│       │       └── helpers/           # Helpers específicos
+│       │
+│       └── repositories/              # Acesso a dados
+│           └── [feature]/
+│               ├── i_[feature]_repository.dart
+│               └── [feature]_repository_impl.dart
+│
+├── test/                              # Testes
+│   └── widget_test.dart
+│
+├── assets/
+│   ├── images/                        # Imagens do app
+│   └── TemplatesEmails/               # Templates HTML
+│
+├── android/                           # Configurações Android
+├── ios/                               # Configurações iOS
+├── pubspec.yaml                       # Dependências
+└── analysis_options.yaml              # Regras de lint
+```
+
+### Convenções de Nomenclatura de Arquivos
+
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| Página principal | `[feature]_page.dart` | `login_page.dart` |
+| Sub-página | `[descricao]_page.dart` | `detalhes_titulo_pagar_page.dart` |
+| Widget | `[nome]_widget.dart` | `btn_save_widget.dart` |
+| Widget global | `[nome]_widget_global.dart` | `app_bar_widget_global.dart` |
+| Model | `[nome]_model.dart` | `login_model.dart` |
+| Model request | `[acao]_request.dart` | `aprovar_tarefas_request.dart` |
+| Model response | `[acao]_response.dart` | `documento_response.dart` |
+| Interface | `i_[feature]_repository.dart` | `i_login_repository.dart` |
+| Implementação | `[feature]_repository_impl.dart` | `login_repository_impl.dart` |
+| Helper | `[descricao]_helpers.dart` | `date_time_helpers.dart` |
+| Extension | `[tipo]_extension.dart` | `form_helper.dart` |
+| Export barrel | `_export_[tipo].dart` | `_export_helpers.dart` |
+
+### Onde Criar Novos Arquivos
+
+**Nova Feature UI:**
+```
+lib/app/modules/[nova_feature]/
+├── [nova_feature]_page.dart     # Página principal
+├── pages/                        # Se houver sub-páginas
+└── widgets/                      # Widgets específicos
+```
+
+**Novo Modelo:**
+```
+lib/app/models/[feature]/
+├── [nome]_model.dart
+├── [nome]_request.dart          # Se for request API
+└── [nome]_response.dart         # Se for response API
+```
+
+**Novo Repository:**
+```
+lib/app/repositories/[feature]/
+├── i_[feature]_repository.dart  # Interface obrigatória
+└── [feature]_repository_impl.dart
+```
+
+**Widget Reutilizável Global:**
+```
+lib/app/core/widgets/[nome]_widget.dart
+```
+
+**Helper Global:**
+```
+lib/app/core/helpers/[nome]_helpers.dart
+```
+
+### Regras de Import
+
+**Imports Absolutos** - Para arquivos fora do módulo atual:
+```dart
+import 'package:versatologin/app/core/helpers/_export_helpers.dart';
+import 'package:versatologin/app/models/login/login_model.dart';
+```
+
+**Imports Relativos** - Dentro do mesmo módulo/feature:
+```dart
+import '../widgets/logo_login.dart';
+import './helpers/local_helper.dart';
+```
+
+### Barrel Files (Exports)
+
+Usar arquivos `_export_*.dart` para agrupar exports:
+```dart
+// _export_helpers.dart
+export 'alert_widget_global.dart';
+export 'date_time_helpers.dart';
+export 'validators.dart';
+// ...
+```
+
+Uso:
+```dart
+import 'package:versatologin/app/core/helpers/_export_helpers.dart';
+```
+
+## Exemplos Curtos
+
+**Criando nova feature "Pagamentos":**
+```
+1. lib/app/modules/pagamentos/pagamentos_page.dart
+2. lib/app/models/pagamentos/pagamento_model.dart
+3. lib/app/repositories/pagamentos/i_pagamentos_repository.dart
+4. lib/app/repositories/pagamentos/pagamentos_repository_impl.dart
+```
+
+**Adicionando widget global:**
+```
+lib/app/core/widgets/loading_overlay_widget.dart
+```
+
+**Adicionando helper específico de feature:**
+```
+lib/app/modules/financeiro/helpers/calculo_juros_helper.dart
+```
+
+## Checklist
+
+- [ ] Novo arquivo segue convenção de nomenclatura
+- [ ] Arquivo criado na pasta correta conforme tipo
+- [ ] Imports organizados (absolutos vs relativos)
+- [ ] Barrel file atualizado se necessário
+- [ ] Pasta da feature contém estrutura padrão
+- [ ] Widgets reutilizáveis em core/widgets ou feature/widgets

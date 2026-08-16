@@ -1,0 +1,85 @@
+---
+description: Padrões de código Dart do projeto Expert Login APP
+alwaysApply: true
+---
+
+# Padrões de Código Dart
+
+## Objetivo
+Estabelecer convenções consistentes de código Dart para garantir legibilidade, manutenibilidade e qualidade do código do projeto Expert System.
+
+## Regras
+
+### Formatação
+- Utilizar `dart format` antes de cada commit
+- Limite de 80 caracteres por linha (recomendado)
+- Indentação com 2 espaços
+
+### Imports
+- Agrupar imports na seguinte ordem:
+  1. Dart SDK (`dart:*`)
+  2. Packages externos (`package:*` de terceiros)
+  3. Packages do projeto (`package:versatologin/*`)
+  4. Imports relativos do projeto
+- Separar cada grupo com linha em branco
+- Ordenar alfabeticamente dentro de cada grupo
+- Preferir imports absolutos (`package:versatologin/...`) para arquivos fora do módulo atual
+- Usar imports relativos (`../`, `./`) apenas dentro do mesmo módulo/feature
+
+### Nomenclatura
+- **Classes**: `PascalCase` → `LoginPage`, `AuthRepository`
+- **Arquivos**: `snake_case` → `login_page.dart`, `auth_repository.dart`
+- **Variáveis/funções**: `camelCase` → `userName`, `fetchData()`
+- **Constantes**: `camelCase` ou `SCREAMING_SNAKE_CASE` para valores globais
+- **Interfaces**: Prefixo `I` → `ILoginRepository`
+- **Implementações**: Sufixo `Impl` → `LoginRepositoryImpl`
+- **Enums**: `PascalCase` para tipo, `camelCase` para valores
+
+### Null Safety
+- Evitar `!` (bang operator) sempre que possível
+- Preferir `??` (null-coalescing) e `?.` (null-aware)
+- Usar `late` apenas quando garantir inicialização antes do uso
+- Declarar tipos explicitamente quando nullability for importante
+
+### Uso de const
+- Usar `const` sempre que possível em widgets e valores imutáveis
+- Construtores `const` para classes imutáveis
+- Listas e mapas constantes com `const []` e `const {}`
+
+### Async/Await
+- Preferir `async/await` sobre `.then()` chains
+- Sempre tratar erros com `try/catch` em operações assíncronas
+- Usar `Future.wait()` para operações paralelas independentes
+- Evitar `async` em funções que não usam `await`
+
+### Extensions
+- Criar extensions em `lib/app/core/extensions/`
+- Nomear arquivo como `*_extension.dart` ou descritivo (`form_helper.dart`)
+- Documentar propósito da extension
+
+### Logs
+- **PROIBIDO**: `print()` em código de produção
+- Usar sistema de logging estruturado ou Firebase Crashlytics para erros
+- Remover prints de debug antes de commits
+
+## Anti-padrões
+
+- ❌ Usar `dynamic` sem necessidade clara
+- ❌ Funções com mais de 50 linhas (refatorar em funções menores)
+- ❌ Classes com mais de 500 linhas (dividir responsabilidades)
+- ❌ Imports não utilizados
+- ❌ Variáveis declaradas e não usadas
+- ❌ Strings hardcoded para textos de UI (usar constantes)
+- ❌ Múltiplos `setState` em sequência (agrupar em um só)
+- ❌ `print()` para logs em produção
+
+## Checklist
+
+- [ ] Código formatado com `dart format`
+- [ ] Imports organizados e sem duplicatas
+- [ ] Nomenclatura segue convenções do projeto
+- [ ] Sem warnings do analyzer
+- [ ] Sem `print()` statements
+- [ ] Tipos nullables tratados adequadamente
+- [ ] `const` aplicado onde possível
+- [ ] Operações async com tratamento de erro

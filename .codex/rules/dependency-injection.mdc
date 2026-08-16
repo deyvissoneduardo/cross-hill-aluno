@@ -1,0 +1,151 @@
+---
+description: Injeção de dependências com GetIt no projeto Expert Login APP
+globs: ["lib/**"]
+---
+
+# Injeção de Dependências - GetIt
+
+## Objetivo
+Padronizar o uso de GetIt para gerenciamento de dependências, definindo ciclos de vida e estratégias de registro.
+
+## Regras
+
+### Biblioteca Padrão
+- **GetIt** (`get_it: ^7.6.0`) é a lib de DI do projeto
+- Acesso via `GetIt.I` ou `GetIt.instance`
+
+### Registro de Dependências
+
+**Singleton** - Uma única instância durante toda vida do app:
+```dart
+GetIt.I.registerSingleton<Database>(database);
+GetIt.I.registerSingleton<IRepository>(RepositoryImpl());
+```
+
+**Factory** - Nova instância a cada chamada:
+```dart
+GetIt.I.registerFactory<MyService>(() => MyServiceImpl());
+```
+
+**Lazy Singleton** - Criado apenas no primeiro acesso:
+```dart
+GetIt.I.registerLazySingleton<IService>(() => ServiceImpl());
+```
+
+### Padrão de Inicialização
+
+Centralizar inicialização de DI em classes `Init*`:
+```dart
+class InitSembastRequisicoes {
+  static Future initialize() async {
+    await _initDatabase();
+    _registerRepositories();
+  }
+  
+  static _registerRepositories() {
+    GetIt locator = GetIt.I;
+    locator.registerSingleton<IRepository>(RepositoryImpl());
+    locator.registerFactory<IService>(() => ServiceImpl());
+  }
+}
+```
+
+### Uso em Widgets
+
+**Correto** - Obter dependência via GetIt:
+```dart
+class MyPage extends StatefulWidget {
+  @override
+  _MyPageState createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  late final IRepository _repo;
+  
+  @override
+  void initState() {
+    super.initState();
+    _repo = GetIt.I<IRepository>();
+  }
+}
+```
+
+**Proibido** - Instanciar diretamente em widgets:
+```dart
+// ❌ ERRADO - não usar em produção
+class _MyPageState extends State<MyPage> {
+  IRepository _repo = RepositoryImpl(); // Evitar!
+}
+```
+
+### Ordem de Boot
+
+No `main.dart`, inicializar dependências antes de `runApp()`:
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. Firebase
+  await Firebase.initializeApp(...);
+  
+  // 2. Dependências locais (DB, Storage)
+  await InitSembastRequisicoes.initialize();
+  
+  // 3. Outros serviços
+  // ...
+  
+  runApp(MyApp());
+}
+```
+
+### Quando Usar Cada Ciclo de Vida
+
+| Tipo | Quando Usar |
+|------|-------------|
+| `Singleton` | Database, SharedPreferences, Services de estado global |
+| `LazySingleton` | Services pesados que podem não ser usados |
+| `Factory` | Repositories com estado local, services sem cache |
+
+## Mocks e Ambientes
+
+### Estratégia para Testes
+
+Resetar GetIt antes de cada teste:
+```dart
+setUp(() {
+  GetIt.I.reset();
+});
+```
+
+Registrar mocks no setup do teste:
+```dart
+setUpAll(() {
+  GetIt.I.registerSingleton<IRepository>(MockRepository());
+});
+```
+
+### Substituição em Runtime (Debug)
+
+```dart
+if (kDebugMode) {
+  GetIt.I.allowReassignment = true;
+  GetIt.I.registerSingleton<IApi>(MockApi());
+}
+```
+
+## Anti-padrões
+
+- ❌ Instanciar services/repositories diretamente em widgets
+- ❌ Múltiplos pontos de registro espalhados pelo código
+- ❌ Não usar interface ao registrar (registrar implementação direta)
+- ❌ Acessar GetIt no build() repetidamente (cachear em variável)
+- ❌ Dependências circulares entre services
+
+## Checklist
+
+- [ ] Novas dependências registradas em classe `Init*` centralizada
+- [ ] Interfaces usadas ao registrar no GetIt
+- [ ] Ciclo de vida apropriado (singleton vs factory)
+- [ ] Widgets obtêm dependências via GetIt, não instanciam diretamente
+- [ ] Testes resetam GetIt e registram mocks adequados
+- [ ] Inicialização acontece no main.dart antes do runApp
