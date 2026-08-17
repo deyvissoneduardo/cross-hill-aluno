@@ -37,7 +37,7 @@ const FORBIDDEN_THIRD_PARTY_KEYS = [
 
 describe('types.ts — contrato público de agendamento', () => {
   it('public_dtos_exclude_third_party_private_fields', () => {
-    const profissional: Profissional = { id: 'prof-1', nome: 'Dra. Ana', cref: '123456-G/SP' }
+    const profissional: Profissional = { id: 'profissional', nome: 'Dra. Ana' }
     const diaDisponivel: DiaDisponivel = { data: '2026-08-20', label: 'Qui, 20/08' }
     const horarioDisponivel: HorarioDisponivel = { horario: '09:00' }
     const solicitacaoAgendamento: SolicitacaoAgendamento = {
@@ -63,7 +63,7 @@ describe('types.ts — contrato público de agendamento', () => {
     }
 
     // Contrato literal: as chaves expostas são exatamente estas — nenhuma a mais.
-    expect(Object.keys(profissional).sort()).toEqual(['cref', 'id', 'nome'])
+    expect(Object.keys(profissional).sort()).toEqual(['id', 'nome'])
     expect(Object.keys(diaDisponivel).sort()).toEqual(['data', 'label'])
     expect(Object.keys(horarioDisponivel).sort()).toEqual(['horario'])
     expect(Object.keys(solicitacaoAgendamento).sort()).toEqual([

@@ -22,19 +22,19 @@ describe('GET /api/public/profissionais', () => {
     listarProfissionaisAtivos.mockReset()
   })
 
-  it('CT-030: get_public_professionals_returns_public_fields — retorna somente id, nome e cref do profissional ativo', async () => {
+  it('CT-030: get_public_professionals_returns_public_fields — retorna somente id e nome do profissional configurado', async () => {
     // `listarProfissionaisAtivos` (T4) já filtra `ativo == true` — o mock simula esse contrato
     // devolvendo só o ativo; a invariante sob teste é que o handler REPASSA fielmente esse
     // resultado como JSON 200, sem envelope extra nem campo administrativo adicional.
-    const ativo: Profissional = { id: 'prof-ativo', nome: 'Ana Souza', cref: '123456-G/DF' }
+    const ativo: Profissional = { id: 'profissional', nome: 'Ana Souza' }
     listarProfissionaisAtivos.mockResolvedValueOnce([ativo])
 
     const response = await GET()
     const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(body).toEqual([{ id: 'prof-ativo', nome: 'Ana Souza', cref: '123456-G/DF' }])
-    expect(Object.keys(body[0])).toEqual(['id', 'nome', 'cref'])
+    expect(body).toEqual([{ id: 'profissional', nome: 'Ana Souza' }])
+    expect(Object.keys(body[0])).toEqual(['id', 'nome'])
   })
 
   it('CT-030 (negative companion): nenhum profissional ativo retorna lista pública vazia, não erro', async () => {

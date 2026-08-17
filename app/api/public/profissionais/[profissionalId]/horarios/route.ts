@@ -3,9 +3,8 @@
  * (tech_spec.md §7.1, §7.4).
  *
  * Delega toda a leitura à porta `AgendamentoStore` (T4) — nunca acessa Firestore diretamente.
- * `listarHorariosElegiveis` já remove horários `CONFIRMADO` e mantém elegíveis os horários com
- * Solicitações de Agendamento `AGUARDANDO_CONFIRMACAO` de terceiros (RN-07/CA-07/CA-15); este
- * handler apenas repassa o resultado, sem reimplementar a regra.
+ * `listarHorariosElegiveis` retorna slots com `liberado == true` e `agendamentoId == null`;
+ * este handler apenas repassa o resultado.
  *
  * `data` é obrigatória via query string (`?data=YYYY-MM-DD`, tech_spec.md §7.1). Ausente ou
  * malformada é rejeitada ANTES de consultar a store — o endpoint público não tem autenticação,

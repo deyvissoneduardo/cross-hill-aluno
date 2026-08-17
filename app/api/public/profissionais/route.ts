@@ -1,9 +1,9 @@
 /**
- * Route Handler público: lista profissionais ativos (tech_spec.md §7.1, §7.4).
+ * Route Handler público: retorna o único profissional configurado.
  *
  * Delega toda a leitura à porta `AgendamentoStore` (T4) — nunca acessa Firestore diretamente.
- * `listarProfissionaisAtivos` já filtra `ativo == true` e mapeia para o DTO público mínimo
- * (`id`, `nome`, `cref`); este handler apenas repassa o resultado, sem reimplementar a regra.
+ * `listarProfissionaisAtivos` lê `configuracoes/profissional.nome` e mapeia para o DTO público
+ * mínimo (`id`, `nome`); este handler apenas repassa o resultado.
  */
 import { listarProfissionaisAtivos } from '@/lib/firebase/agendamentoStore'
 

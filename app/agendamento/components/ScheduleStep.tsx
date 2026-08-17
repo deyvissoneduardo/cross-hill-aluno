@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { InlineBanner } from '@/components/ui/InlineBanner'
 import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { SecondaryButton } from '@/components/ui/SecondaryButton'
-import { SelectionCard } from '@/components/ui/SelectionCard'
 import { SkeletonBlock } from '@/components/ui/SkeletonBlock'
 import { TimeChip } from '@/components/ui/TimeChip'
 import { disponibilidadeRepository } from '../repositories/disponibilidadeRepository'
@@ -27,6 +26,7 @@ const ERRO_HORARIOS = 'Não foi possível carregar os horários.'
 const VAZIO_PROFISSIONAIS = 'Nenhum profissional disponível no momento.'
 const VAZIO_DIAS = 'Não há datas disponíveis para este profissional.'
 const VAZIO_HORARIOS = 'Não há horários disponíveis nesta data.'
+const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
 export function ScheduleStep() {
   const { state, dispatch } = useAppointmentFlow()
@@ -48,6 +48,7 @@ export function ScheduleStep() {
   const [profissionaisRetry, setProfissionaisRetry] = useState(0)
   const [diasRetry, setDiasRetry] = useState(0)
   const [horariosRetry, setHorariosRetry] = useState(0)
+  const [mesVisivel, setMesVisivel] = useState(() => inicioDoMes(new Date()))
 
   const profissionalSelecionado = state.selection.profissional
   const diaSelecionado = state.selection.dia
@@ -65,8 +66,13 @@ export function ScheduleStep() {
   const diasStatus = statusDoRecurso(diasResource, diasKey)
   const horariosStatus = statusDoRecurso(horariosResource, horariosKey)
   const profissionais = profissionaisStatus === 'success' ? profissionaisResource.dados : []
-  const dias = diasStatus === 'success' ? diasResource.dados : []
+  const dias = useMemo(
+    () => (diasStatus === 'success' ? diasResource.dados : []),
+    [diasResource.dados, diasStatus]
+  )
   const horarios = horariosStatus === 'success' ? horariosResource.dados : []
+  const diasDisponiveis = useMemo(() => new Map(dias.map((dia) => [dia.data, dia])), [dias])
+  const diasDoCalendario = useMemo(() => montarMes(mesVisivel), [mesVisivel])
 
   useEffect(() => {
     if (!profissionaisKey) return
@@ -86,6 +92,15 @@ export function ScheduleStep() {
       ativo = false
     }
   }, [profissionaisKey])
+
+  useEffect(() => {
+    if (profissionaisStatus !== 'success' || profissionaisResource.dados.length !== 1) return
+
+    const profissional = profissionaisResource.dados[0]
+    if (profissionalSelecionado?.id !== profissional.id) {
+      dispatch({ type: 'SELECT_PROFESSIONAL', payload: profissional })
+    }
+  }, [dispatch, profissionalSelecionado?.id, profissionaisResource, profissionaisStatus])
 
   useEffect(() => {
     if (!profissionalSelecionado || !diasKey) return
@@ -129,13 +144,6 @@ export function ScheduleStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-3" aria-labelledby="schedule-profissionais-heading">
-        <h2 id="schedule-profissionais-heading" className="text-base font-semibold text-[var(--foreground)]">
-          Profissional
-        </h2>
-        {renderProfissionais()}
-      </section>
-
       <section className="flex flex-col gap-3" aria-labelledby="schedule-dias-heading">
         <h2 id="schedule-dias-heading" className="text-base font-semibold text-[var(--foreground)]">
           Dia
@@ -159,13 +167,13 @@ export function ScheduleStep() {
     </div>
   )
 
-  function renderProfissionais() {
+  function renderEstadoProfissional() {
     if (profissionaisStatus === 'loading' || profissionaisStatus === 'idle') {
       return (
-        <div className="flex flex-col gap-3">
-          <SkeletonBlock height="4.5rem" label="Carregando profissionais" />
-          <SkeletonBlock height="4.5rem" label="Carregando profissionais" />
-          <SkeletonBlock height="4.5rem" label="Carregando profissionais" />
+        <div className="grid grid-cols-7 gap-2">
+          {Array.from({ length: 35 }, (_, index) => (
+            <SkeletonBlock key={index} height="3rem" label="Carregando calendário" />
+          ))}
         </div>
       )
     }
@@ -185,31 +193,32 @@ export function ScheduleStep() {
       return <InlineBanner tone="info">{VAZIO_PROFISSIONAIS}</InlineBanner>
     }
 
-    return (
-      <div className="flex flex-col gap-3">
-        {profissionais.map((profissional) => (
-          <SelectionCard
-            key={profissional.id}
-            title={profissional.nome}
-            description={`CREF ${profissional.cref}`}
-            selected={profissionalSelecionado?.id === profissional.id}
-            onSelect={() => dispatch({ type: 'SELECT_PROFESSIONAL', payload: profissional })}
-          />
-        ))}
-      </div>
-    )
+    return null
   }
 
   function renderDias() {
+    const estadoProfissional = renderEstadoProfissional()
+    if (estadoProfissional) {
+      if (profissionaisStatus === 'loading' || profissionaisStatus === 'idle') {
+        return estadoProfissional
+      }
+      return (
+        <div className="flex flex-col gap-3">
+          {renderCalendarioIndisponivel()}
+          {estadoProfissional}
+        </div>
+      )
+    }
+
     if (!profissionalSelecionado) {
-      return <p className="text-sm text-[var(--text-muted)]">Escolha um profissional para ver as datas.</p>
+      return null
     }
 
     if (diasStatus === 'loading') {
       return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {Array.from({ length: 7 }, (_, index) => (
-            <SkeletonBlock key={index} height="4rem" label="Carregando datas disponíveis" />
+        <div className="grid grid-cols-7 gap-2">
+          {Array.from({ length: 35 }, (_, index) => (
+            <SkeletonBlock key={index} height="3rem" label="Carregando calendário" />
           ))}
         </div>
       )
@@ -217,30 +226,112 @@ export function ScheduleStep() {
 
     if (diasStatus === 'error') {
       return (
-        <InlineBanner
-          tone="error"
-          action={{ label: 'Tentar novamente', onClick: () => setDiasRetry((value) => value + 1) }}
-        >
-          {ERRO_DIAS}
-        </InlineBanner>
+        <div className="flex flex-col gap-3">
+          {renderCalendarioIndisponivel()}
+          <InlineBanner
+            tone="error"
+            action={{ label: 'Tentar novamente', onClick: () => setDiasRetry((value) => value + 1) }}
+          >
+            {ERRO_DIAS}
+          </InlineBanner>
+        </div>
       )
     }
 
-    if (dias.length === 0) {
-      return <InlineBanner tone="info">{VAZIO_DIAS}</InlineBanner>
-    }
-
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {dias.map((dia) => (
-          <SelectionCard
-            key={dia.data}
-            title={dia.label}
-            description={dia.data}
-            selected={diaSelecionado?.data === dia.data}
-            onSelect={() => dispatch({ type: 'SELECT_DAY', payload: dia })}
-          />
-        ))}
+      <div className="flex flex-col gap-3" aria-label="Calendário de disponibilidade">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className="rounded-lg px-3 py-2 text-sm text-[var(--text-muted)] hover:bg-black/5"
+            aria-label="Mês anterior"
+            onClick={() => setMesVisivel((mes) => alterarMes(mes, -1))}
+          >
+            ←
+          </button>
+          <p className="font-semibold capitalize text-[var(--foreground)]">
+            {formatarMes(mesVisivel)}
+          </p>
+          <button
+            type="button"
+            className="rounded-lg px-3 py-2 text-sm text-[var(--text-muted)] hover:bg-black/5"
+            aria-label="Próximo mês"
+            onClick={() => setMesVisivel((mes) => alterarMes(mes, 1))}
+          >
+            →
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2 text-center">
+          {DIAS_DA_SEMANA.map((dia) => (
+            <span key={dia} className="py-1 text-xs font-medium text-[var(--text-muted)]">
+              {dia}
+            </span>
+          ))}
+          {diasDoCalendario.map((celula, index) => {
+            if (!celula) return <span key={`vazio-${index}`} aria-hidden="true" />
+
+            const diaDisponivel = diasDisponiveis.get(celula.data)
+            const selecionado = diaSelecionado?.data === celula.data
+            return (
+              <button
+                key={celula.data}
+                type="button"
+                disabled={!diaDisponivel}
+                aria-label={diaDisponivel?.label ?? `${celula.label} indisponível`}
+                aria-pressed={diaDisponivel ? selecionado : undefined}
+                onClick={() => diaDisponivel && dispatch({ type: 'SELECT_DAY', payload: diaDisponivel })}
+                className={`min-h-12 rounded-xl border text-sm font-semibold transition-colors ${
+                  diaDisponivel
+                    ? selecionado
+                      ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                      : 'border-[var(--accent)] bg-[var(--surface-muted)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white'
+                    : 'cursor-not-allowed border-transparent bg-black/5 text-[var(--text-muted)] opacity-55'
+                }`}
+              >
+                {celula.dia}
+              </button>
+            )
+          })}
+        </div>
+
+        {dias.length === 0 ? <InlineBanner tone="info">{VAZIO_DIAS}</InlineBanner> : null}
+      </div>
+    )
+  }
+
+  function renderCalendarioIndisponivel() {
+    return (
+      <div className="flex flex-col gap-3" aria-label="Calendário de disponibilidade">
+        <div className="flex items-center justify-between gap-3">
+          <button type="button" aria-label="Mês anterior" onClick={() => setMesVisivel((mes) => alterarMes(mes, -1))}>
+            ←
+          </button>
+          <p className="font-semibold capitalize text-[var(--foreground)]">{formatarMes(mesVisivel)}</p>
+          <button type="button" aria-label="Próximo mês" onClick={() => setMesVisivel((mes) => alterarMes(mes, 1))}>
+            →
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-2 text-center">
+          {DIAS_DA_SEMANA.map((dia) => (
+            <span key={dia} className="py-1 text-xs font-medium text-[var(--text-muted)]">{dia}</span>
+          ))}
+          {diasDoCalendario.map((celula, index) =>
+            celula ? (
+              <button
+                key={celula.data}
+                type="button"
+                disabled
+                aria-label={`${celula.label} indisponível`}
+                className="min-h-12 cursor-not-allowed rounded-xl border border-transparent bg-black/5 text-sm font-semibold text-[var(--text-muted)] opacity-55"
+              >
+                {celula.dia}
+              </button>
+            ) : (
+              <span key={`vazio-${index}`} aria-hidden="true" />
+            )
+          )}
+        </div>
       </div>
     )
   }
@@ -288,6 +379,40 @@ export function ScheduleStep() {
       </div>
     )
   }
+}
+
+function inicioDoMes(data: Date): Date {
+  return new Date(data.getFullYear(), data.getMonth(), 1)
+}
+
+function alterarMes(data: Date, quantidade: number): Date {
+  return new Date(data.getFullYear(), data.getMonth() + quantidade, 1)
+}
+
+function formatarMes(data: Date): string {
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(data)
+}
+
+function montarMes(data: Date): Array<{ data: string; dia: number; label: string } | null> {
+  const ano = data.getFullYear()
+  const mes = data.getMonth()
+  const totalDias = new Date(ano, mes + 1, 0).getDate()
+  const celulas: Array<{ data: string; dia: number; label: string } | null> = Array.from(
+    { length: new Date(ano, mes, 1).getDay() },
+    () => null
+  )
+
+  for (let dia = 1; dia <= totalDias; dia += 1) {
+    const referencia = new Date(ano, mes, dia)
+    const dataIso = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+    celulas.push({
+      data: dataIso,
+      dia,
+      label: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(referencia),
+    })
+  }
+
+  return celulas
 }
 
 function statusDoRecurso<T>(resource: ResourceState<T>, key: string | null): LoadState {

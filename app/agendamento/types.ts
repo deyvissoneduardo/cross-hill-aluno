@@ -21,7 +21,6 @@ export type StatusSolicitacaoAgendamento =
 export interface Profissional {
   id: string
   nome: string
-  cref: string
 }
 
 /** Dia liberado para agendamento com um profissional (tech_spec.md §7.2 — `DiaDisponivelDTO`). */

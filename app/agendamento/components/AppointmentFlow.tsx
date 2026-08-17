@@ -25,7 +25,7 @@ function AppointmentFlowContent() {
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold text-[var(--foreground)]">Escolha seu horário</h1>
           <p className="text-sm leading-6 text-[var(--text-muted)]">
-            Selecione profissional, data e horário disponíveis.
+            Selecione o dia e depois o horário disponível.
           </p>
           {state.flowError ? <InlineBanner tone="warning">{state.flowError}</InlineBanner> : null}
         </section>

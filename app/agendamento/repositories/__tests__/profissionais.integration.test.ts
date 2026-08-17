@@ -32,10 +32,9 @@ describe('CT-005 — repository_filters_active_professionals', () => {
     server.use(
       http.get('/api/public/profissionais', () =>
         HttpResponse.json([
-          { id: 'prof-1', nome: 'Ana Souza', cref: '123456-G/DF' },
+          { id: 'profissional', nome: 'Ana Souza', legado: 'ignorado' },
           // O servidor já filtra ativos (T5) — o repository não deve reintroduzir `ativo`
           // nem qualquer outro campo extra do JSON no model mapeado (parse defensivo).
-          { id: 'prof-2', nome: 'Bruno Lima', cref: '654321-G/DF', ativo: true },
         ])
       )
     )
@@ -44,14 +43,11 @@ describe('CT-005 — repository_filters_active_professionals', () => {
 
     expect(resultado).toEqual({
       ok: true,
-      dados: [
-        { id: 'prof-1', nome: 'Ana Souza', cref: '123456-G/DF' },
-        { id: 'prof-2', nome: 'Bruno Lima', cref: '654321-G/DF' },
-      ],
+      dados: [{ id: 'profissional', nome: 'Ana Souza' }],
     })
     if (resultado.ok) {
       for (const profissional of resultado.dados) {
-        expect(Object.keys(profissional).sort()).toEqual(['cref', 'id', 'nome'])
+        expect(Object.keys(profissional).sort()).toEqual(['id', 'nome'])
       }
     }
   })
@@ -59,13 +55,13 @@ describe('CT-005 — repository_filters_active_professionals', () => {
   it('descarta item malformado da lista sem quebrar o parse dos demais', async () => {
     server.use(
       http.get('/api/public/profissionais', () =>
-        HttpResponse.json([{ id: 'prof-1', nome: 'Ana Souza', cref: '123456-G/DF' }, { id: 'prof-sem-nome' }])
+        HttpResponse.json([{ id: 'profissional', nome: 'Ana Souza' }, { id: 'prof-sem-nome' }])
       )
     )
 
     const resultado = await profissionaisRepository.listar()
 
-    expect(resultado).toEqual({ ok: true, dados: [{ id: 'prof-1', nome: 'Ana Souza', cref: '123456-G/DF' }] })
+    expect(resultado).toEqual({ ok: true, dados: [{ id: 'profissional', nome: 'Ana Souza' }] })
   })
 })
 

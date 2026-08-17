@@ -26,9 +26,8 @@ describe('appointmentReducer — transições do fluxo', () => {
       },
       selection: {
         profissional: {
-          id: 'prof-1',
+          id: 'profissional',
           nome: 'Maria Silva',
-          cref: '123456-G/DF',
         },
         dia: {
           data: '2026-08-20',

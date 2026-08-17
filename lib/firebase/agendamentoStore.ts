@@ -13,8 +13,9 @@
  * real — leia a "NOTA TÉCNICA" no JSDoc dessa classe antes de alterá-la.
  *
  * Concorrência (§8.3): `criarSolicitacaoAgendamento` roda dentro de uma transação Firestore.
- * O bloqueio transacional obrigatório é (a) elegibilidade do horário — o `profissionalId` existe e
- * `disponibilidades/{profissionalId}_{data}` tem `ativo == true` com `dto.horario` em `horarios[]`
+ * O bloqueio transacional obrigatório é (a) elegibilidade do horário — o profissional configurado
+ * existe e `disponibilidade/{data}.slots.{horario}` tem `liberado == true` e
+ * `agendamentoId == null`
  * (o endpoint público não tem autenticação, então a elegibilidade nunca é presumida da consulta
  * anterior da UI), (b) duplicidade diária do mesmo `telefoneNormalizado`
  * (`AGUARDANDO_CONFIRMACAO`|`CONFIRMADO` contam como ativa; `CANCELADO` não conta) e (c) slot
@@ -30,7 +31,7 @@
 
 import 'server-only'
 
-import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { FieldPath, FieldValue, getFirestore } from 'firebase-admin/firestore'
 import type {
   ConfiguracaoSucesso,
   CriarSolicitacaoAgendamentoDTO,
@@ -42,10 +43,10 @@ import type {
 } from '@/app/agendamento/types'
 import { getFirebaseAdminApp } from './admin'
 
-const NOME_COLECAO_PROFISSIONAIS = 'profissionais'
-const NOME_COLECAO_DISPONIBILIDADES = 'disponibilidades'
+const NOME_COLECAO_DISPONIBILIDADE = 'disponibilidade'
 const NOME_COLECAO_AGENDAMENTOS = 'agendamentos'
 const NOME_COLECAO_CONFIGURACOES = 'configuracoes'
+const ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL = 'profissional'
 const ID_DOCUMENTO_CONFIGURACAO_SUCESSO = 'sucessoPublico'
 
 /**
@@ -91,11 +92,6 @@ function comoIdDeDocumento(valor: string, campo: string): string {
   return valor
 }
 
-/** Id do documento `disponibilidades/{profissionalId}_{data}` (tech_spec.md §7.4). */
-function idDocumentoDisponibilidade(profissionalId: string, data: string): string {
-  return `${comoIdDeDocumento(profissionalId, 'profissionalId')}_${comoIdDeDocumento(data, 'data')}`
-}
-
 /**
  * Formata a data (`YYYY-MM-DD`) em rótulo de exibição pt-BR (ex.: "Qui, 20/08").
  * Compartilhado entre `FirestoreAgendamentoStore` e o fake de teste para que as duas
@@ -112,11 +108,25 @@ export function formatarLabelDia(data: string): string {
   return `${diaSemana.charAt(0).toUpperCase()}${diaSemana.slice(1)}, ${diaMes}`
 }
 
+/** Um slot só pode ser escolhido quando está explicitamente liberado e ainda não foi reservado. */
+export function slotEstaDisponivel(dados: unknown): boolean {
+  if (!dados || typeof dados !== 'object') return false
+  const slot = dados as Record<string, unknown>
+  return slot.liberado === true && slot.agendamentoId === null
+}
+
+function lerSlots(dados: unknown): Record<string, unknown> {
+  if (!dados || typeof dados !== 'object') return {}
+  const slots = (dados as Record<string, unknown>).slots
+  return slots && typeof slots === 'object' && !Array.isArray(slots)
+    ? (slots as Record<string, unknown>)
+    : {}
+}
+
 /**
  * Erro de domínio tipado: o horário pedido não pode receber a Solicitação de Agendamento porque
- * (a) não é elegível — profissional inexistente, dia com `ativo == false` ou horário fora de
- * `horarios[]` (§8.3) — ou (b) o slot (`profissionalId`+`data`+`horario`) já tem uma Solicitação de
- * Agendamento `CONFIRMADO` (RN-06/CA-06/CA-12). As duas causas compartilham deliberadamente o
+ * não é elegível — profissional inexistente, slot não liberado ou `agendamentoId` já preenchido.
+ * Essas causas compartilham deliberadamente o
  * mesmo código e a mesma mensagem: o cliente vê "não está mais disponível" sem descobrir se o
  * administrador desativou o dia, removeu o horário ou confirmou outra pessoa. Mensagem e campos
  * nunca carregam nome, telefone ou identificador de Solicitação de Agendamento de terceiro.
@@ -150,7 +160,7 @@ export class TelefoneDuplicadoNoDiaError extends Error {
  * — nenhum método adicional é exposto só para o fake funcionar.
  */
 export interface AgendamentoStore {
-  /** Profissionais com `ativo == true`, mapeados para o formato público (tech_spec.md §7.4). */
+  /** Único profissional definido em `configuracoes/profissional.nome`, no formato público. */
   listarProfissionaisAtivos(): Promise<Profissional[]>
   /**
    * Dias com disponibilidade `ativo == true` para o profissional informado, ordenados por `data`
@@ -238,56 +248,46 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
 
   async listarProfissionaisAtivos(): Promise<Profissional[]> {
     const snapshot = await this.firestore()
-      .collection(NOME_COLECAO_PROFISSIONAIS)
-      .where('ativo', '==', true)
+      .collection(NOME_COLECAO_CONFIGURACOES)
+      .doc(ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL)
       .get()
+    const dados = snapshot.data() as { nome?: unknown } | undefined
 
-    return snapshot.docs.map((doc) => {
-      const dados = doc.data() as { nome: string; cref: string }
-      return { id: doc.id, nome: dados.nome, cref: dados.cref }
-    })
+    return typeof dados?.nome === 'string' && dados.nome.trim()
+      ? [{ id: ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL, nome: dados.nome }]
+      : []
   }
 
   async listarDiasLiberados(profissionalId: string): Promise<DiaDisponivel[]> {
-    const snapshot = await this.firestore()
-      .collection(NOME_COLECAO_DISPONIBILIDADES)
-      .where('profissionalId', '==', profissionalId)
-      .where('ativo', '==', true)
-      .get()
+    if (profissionalId !== ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL) return []
 
-    return snapshot.docs
-      .map((doc) => (doc.data() as { data: string }).data)
+    const snapshot = await this.firestore().collection(NOME_COLECAO_DISPONIBILIDADE).get()
+    const diasComDisponibilidade = snapshot.docs
+      .filter((doc) => Object.values(lerSlots(doc.data())).some(slotEstaDisponivel))
+      .map((doc) => doc.id)
+
+    return diasComDisponibilidade
+      .filter((data, index, lista) => /^\d{4}-\d{2}-\d{2}$/.test(data) && lista.indexOf(data) === index)
       .sort((a, b) => a.localeCompare(b))
       .map((data) => ({ data, label: formatarLabelDia(data) }))
   }
 
   async listarHorariosElegiveis(profissionalId: string, data: string): Promise<HorarioDisponivel[]> {
     const firestore = this.firestore()
+    const profissionalIdSeguro = comoIdDeDocumento(profissionalId, 'profissionalId')
+    const dataSegura = comoIdDeDocumento(data, 'data')
 
-    const disponibilidadeSnap = await firestore
-      .collection(NOME_COLECAO_DISPONIBILIDADES)
-      .doc(idDocumentoDisponibilidade(profissionalId, data))
+    if (profissionalIdSeguro !== ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL) return []
+
+    const disponibilidade = await firestore
+      .collection(NOME_COLECAO_DISPONIBILIDADE)
+      .doc(dataSegura)
       .get()
-    const disponibilidade = disponibilidadeSnap.data() as
-      | { horarios: string[]; ativo: boolean }
-      | undefined
 
-    if (!disponibilidade || !disponibilidade.ativo) {
-      return []
-    }
-
-    const confirmadosSnap = await firestore
-      .collection(NOME_COLECAO_AGENDAMENTOS)
-      .where('profissionalId', '==', profissionalId)
-      .where('data', '==', data)
-      .where('status', '==', 'CONFIRMADO' satisfies StatusSolicitacaoAgendamento)
-      .get()
-    const horariosConfirmados = new Set(
-      confirmadosSnap.docs.map((doc) => (doc.data() as { horario: string }).horario)
-    )
-
-    return disponibilidade.horarios
-      .filter((horario) => !horariosConfirmados.has(horario))
+    return Object.entries(lerSlots(disponibilidade.data()))
+      .filter(([, slot]) => slotEstaDisponivel(slot))
+      .map(([horario]) => horario)
+      .sort((a, b) => a.localeCompare(b))
       .map((horario) => ({ horario }))
   }
 
@@ -330,23 +330,20 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
   async criarSolicitacaoAgendamento(
     dto: CriarSolicitacaoAgendamentoDTO
   ): Promise<SolicitacaoAgendamentoDTO> {
+    comoIdDeDocumento(dto.profissionalId, 'profissionalId')
+    comoIdDeDocumento(dto.data, 'data')
+    comoIdDeDocumento(dto.horario, 'horario')
+
     const firestore = this.firestore()
     const novoDocumentoRef = firestore.collection(NOME_COLECAO_AGENDAMENTOS).doc()
 
     return firestore.runTransaction(async (transaction) => {
       const profissionalRef = firestore
-        .collection(NOME_COLECAO_PROFISSIONAIS)
-        .doc(comoIdDeDocumento(dto.profissionalId, 'profissionalId'))
+        .collection(NOME_COLECAO_CONFIGURACOES)
+        .doc(ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL)
       const disponibilidadeRef = firestore
-        .collection(NOME_COLECAO_DISPONIBILIDADES)
-        .doc(idDocumentoDisponibilidade(dto.profissionalId, dto.data))
-      const slotConfirmadoQuery = firestore
-        .collection(NOME_COLECAO_AGENDAMENTOS)
-        .where('profissionalId', '==', dto.profissionalId)
-        .where('data', '==', dto.data)
-        .where('horario', '==', dto.horario)
-        .where('status', '==', 'CONFIRMADO' satisfies StatusSolicitacaoAgendamento)
-        .limit(1)
+        .collection(NOME_COLECAO_DISPONIBILIDADE)
+        .doc(comoIdDeDocumento(dto.data, 'data'))
       const telefoneDuplicadoQuery = firestore
         .collection(NOME_COLECAO_AGENDAMENTOS)
         .where('telefoneNormalizado', '==', dto.telefoneNormalizado)
@@ -355,12 +352,11 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
         .limit(1)
 
       // Transações Firestore exigem que TODAS as leituras ocorram antes de qualquer escrita —
-      // por isso as quatro leituras abaixo rodam concorrentemente e só depois vem o `transaction.set`.
-      const [profissionalSnap, disponibilidadeSnap, slotConfirmadoSnap, telefoneDuplicadoSnap] =
+      // por isso as leituras abaixo rodam concorrentemente e só depois vêm as duas escritas.
+      const [profissionalSnap, disponibilidadeSnap, telefoneDuplicadoSnap] =
         await Promise.all([
           transaction.get(profissionalRef),
           transaction.get(disponibilidadeRef),
-          transaction.get(slotConfirmadoQuery),
           transaction.get(telefoneDuplicadoQuery),
         ])
 
@@ -370,15 +366,13 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
       // `data()` de documento inexistente é `undefined`; os campos são opcionais no tipo porque o
       // documento Firestore pode estar incompleto — daí a checagem em vez de fallback silencioso.
       const profissionalDados = profissionalSnap.data() as { nome?: string } | undefined
-      const disponibilidade = disponibilidadeSnap.data() as
-        | { horarios?: string[]; ativo?: boolean }
-        | undefined
-      const horarioElegivel =
-        disponibilidade?.ativo === true && (disponibilidade.horarios ?? []).includes(dto.horario)
-      if (!profissionalDados?.nome || !horarioElegivel) {
-        throw new SlotIndisponivelError()
-      }
-      if (!slotConfirmadoSnap.empty) {
+      const slot = lerSlots(disponibilidadeSnap.data())[dto.horario]
+      const horarioElegivel = slotEstaDisponivel(slot)
+      if (
+        dto.profissionalId !== ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL ||
+        !profissionalDados?.nome ||
+        !horarioElegivel
+      ) {
         throw new SlotIndisponivelError()
       }
       if (!telefoneDuplicadoSnap.empty) {
@@ -387,6 +381,11 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
 
       const status: StatusSolicitacaoAgendamento = 'AGUARDANDO_CONFIRMACAO'
 
+      transaction.update(
+        disponibilidadeRef,
+        new FieldPath('slots', dto.horario, 'agendamentoId'),
+        novoDocumentoRef.id
+      )
       transaction.set(novoDocumentoRef, {
         nomeCliente: dto.nomeCliente,
         telefoneExibicao: dto.telefoneExibicao,

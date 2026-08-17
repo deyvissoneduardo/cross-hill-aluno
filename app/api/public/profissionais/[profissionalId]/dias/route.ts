@@ -2,7 +2,7 @@
  * Route Handler público: lista dias liberados de um profissional (tech_spec.md §7.1, §7.4).
  *
  * Delega toda a leitura à porta `AgendamentoStore` (T4) — nunca acessa Firestore diretamente.
- * `listarDiasLiberados` já filtra `ativo == true` e mapeia para o DTO público mínimo
+ * `listarDiasLiberados` mantém datas com ao menos um slot liberado e sem agendamento, e mapeia para o DTO público mínimo
  * (`data`, `label`); este handler apenas repassa o resultado, sem reimplementar a regra.
  *
  * `params` é uma Promise nesta versão do Next.js (App Router / Route Handlers dinâmicos) —

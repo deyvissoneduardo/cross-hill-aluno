@@ -18,7 +18,7 @@ import { setupServer } from 'msw/node'
 
 import { AppointmentFlow } from '../components/AppointmentFlow'
 
-const PROFISSIONAIS_ATIVOS = [{ id: 'prof-1', nome: 'Ana Souza', cref: '123456-G/DF' }]
+const PROFISSIONAIS_ATIVOS = [{ id: 'profissional', nome: 'Ana Souza' }]
 const DIAS_LIBERADOS = [{ data: '2026-08-20', label: 'Qui, 20/08' }]
 const HORARIOS_ELEGIVEIS = [{ horario: '09:00' }]
 const SOLICITACAO_ACEITA = {
@@ -36,8 +36,8 @@ beforeEach(() => {
   cleanup()
   server.use(
     http.get('/api/public/profissionais', () => HttpResponse.json(PROFISSIONAIS_ATIVOS)),
-    http.get('/api/public/profissionais/prof-1/dias', () => HttpResponse.json(DIAS_LIBERADOS)),
-    http.get('/api/public/profissionais/prof-1/horarios', () => HttpResponse.json(HORARIOS_ELEGIVEIS)),
+    http.get('/api/public/profissionais/profissional/dias', () => HttpResponse.json(DIAS_LIBERADOS)),
+    http.get('/api/public/profissionais/profissional/horarios', () => HttpResponse.json(HORARIOS_ELEGIVEIS)),
     http.get('/api/public/configuracao/sucesso', () =>
       HttpResponse.json({
         titulo: 'Solicitação recebida',
@@ -137,7 +137,6 @@ async function renderReviewStep(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Nome'), 'João Silva')
   await user.type(screen.getByLabelText('Telefone'), '(61) 99999-9999')
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
-  await user.click(await screen.findByRole('button', { name: /Ana Souza/i }))
   await user.click(await screen.findByRole('button', { name: /Qui, 20\/08/i }))
   await user.click(await screen.findByRole('button', { name: '09:00' }))
   await user.click(screen.getByRole('button', { name: 'Continuar' }))

@@ -1,9 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 
-const PROFISSIONAIS = [
-  { id: 'prof-1', nome: 'Maria Silva', cref: '123456-G/DF' },
-  { id: 'prof-2', nome: 'João Souza', cref: '654321-G/DF' },
-]
+const PROFISSIONAIS = [{ id: 'profissional', nome: 'Maria Silva' }]
 
 const DIAS = [{ data: '2026-08-20', label: 'Qui, 20/08' }]
 const HORARIOS = [{ horario: '09:00' }, { horario: '14:00' }]
@@ -89,10 +86,10 @@ async function prepararApiPublica(
   await page.route('**/api/public/profissionais', async (route) => {
     await route.fulfill({ json: PROFISSIONAIS })
   })
-  await page.route('**/api/public/profissionais/prof-1/dias', async (route) => {
+  await page.route('**/api/public/profissionais/profissional/dias', async (route) => {
     await route.fulfill({ json: DIAS })
   })
-  await page.route('**/api/public/profissionais/prof-1/horarios**', async (route) => {
+  await page.route('**/api/public/profissionais/profissional/horarios**', async (route) => {
     await route.fulfill({ json: overrides.horarios ?? HORARIOS })
   })
   await page.route('**/api/public/agendamentos', async (route) => {
@@ -130,9 +127,6 @@ async function preencherIdentificacao(page: Page, nome: string, telefone: string
 
 async function selecionarHorario(page: Page) {
   await expect(page.getByRole('heading', { name: 'Escolha seu horário' })).toBeVisible()
-  await page.getByRole('button', { name: /Maria Silva/ }).click()
-  await expect(page.getByRole('button', { name: /Maria Silva/ })).toHaveAttribute('aria-pressed', 'true')
-
   await page.getByRole('button', { name: /Qui, 20\/08/ }).click()
   await expect(page.getByRole('button', { name: /Qui, 20\/08/ })).toHaveAttribute('aria-pressed', 'true')
 

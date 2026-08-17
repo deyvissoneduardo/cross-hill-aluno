@@ -45,17 +45,13 @@ async function extrairMensagemDeErro(response: Response): Promise<string | undef
 function paraProfissional(item: unknown): Profissional | null {
   if (!item || typeof item !== 'object') return null
   const bruto = item as Record<string, unknown>
-  if (
-    typeof bruto.id !== 'string' ||
-    typeof bruto.nome !== 'string' ||
-    typeof bruto.cref !== 'string'
-  ) {
+  if (typeof bruto.id !== 'string' || typeof bruto.nome !== 'string') {
     return null
   }
-  return { id: bruto.id, nome: bruto.nome, cref: bruto.cref }
+  return { id: bruto.id, nome: bruto.nome }
 }
 
-/** `GET /api/public/profissionais` (T5) — lista de profissionais ativos já filtrados pelo servidor. */
+/** `GET /api/public/profissionais` — retorna o único profissional configurado pelo servidor. */
 async function listar(): Promise<ResultadoRepository<Profissional[]>> {
   let response: Response
   try {

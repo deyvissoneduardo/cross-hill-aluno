@@ -16,8 +16,21 @@ import {
   STATUS_SOLICITACAO_ATIVOS,
   TelefoneDuplicadoNoDiaError,
   formatarLabelDia,
+  slotEstaDisponivel,
   type AgendamentoStore,
 } from './agendamentoStore'
+
+describe('slotEstaDisponivel', () => {
+  it.each([
+    ['liberado e sem agendamento', { liberado: true, agendamentoId: null }, true],
+    ['já reservado', { liberado: true, agendamentoId: 'agendamento-1' }, false],
+    ['bloqueado por liberado', { liberado: false, agendamentoId: null }, false],
+    ['sem a flag liberado', { agendamentoId: null }, false],
+    ['sem campos obrigatórios', {}, false],
+  ])('CT-036: %s', (_cenario, slot, esperado) => {
+    expect(slotEstaDisponivel(slot)).toBe(esperado)
+  })
+})
 
 /**
  * Emula a camada de servidor do Next.js para o marcador `server-only` (mesma justificativa de
@@ -506,14 +519,18 @@ describe('FirestoreAgendamentoStore — id de documento não confia cegamente no
    * exatamente isso que as asserções verificam.
    */
   function firestoreEspiao() {
-    const doc = vi.fn(() => ({ id: 'doc-novo' }))
+    // SUT_IS_CORRECT_BECAUSE: DocumentSnapshot real sempre expõe `data()`; o espíão antigo
+    // simulava apenas QuerySnapshot e ficou incompleto após a leitura migrar para o mapa `slots`.
+    const get = vi.fn().mockResolvedValue({ docs: [], data: () => ({ slots: {} }) })
+    const subcollection = vi.fn(() => ({ get }))
+    const doc = vi.fn(() => ({ id: 'doc-novo', collection: subcollection, get }))
     const collection = vi.fn(() => ({ doc }))
     const transacao = { get: vi.fn(), set: vi.fn() }
     const runTransaction = vi.fn((executar: (t: typeof transacao) => Promise<unknown>) =>
       executar(transacao)
     )
     getFirestore.mockReturnValue({ collection, runTransaction })
-    return { doc, transacao }
+    return { doc, subcollection, transacao }
   }
 
   it.each([
@@ -572,8 +589,8 @@ describe('FirestoreAgendamentoStore — id de documento não confia cegamente no
     const { doc } = firestoreEspiao()
     const store = new FirestoreAgendamentoStore()
 
-    await store.listarHorariosElegiveis('prof-1', '2026-08-20').catch(() => undefined)
+    await store.listarHorariosElegiveis('profissional', '2026-08-20')
 
-    expect(doc).toHaveBeenCalledWith('prof-1_2026-08-20')
+    expect(doc).toHaveBeenCalledWith('2026-08-20')
   })
 })
