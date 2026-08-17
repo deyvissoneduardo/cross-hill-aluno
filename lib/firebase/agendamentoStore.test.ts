@@ -11,6 +11,7 @@ import type {
 } from '@/app/agendamento/types'
 import {
   CONFIGURACAO_SUCESSO_FALLBACK,
+  FirestoreAgendamentoStore,
   SlotIndisponivelError,
   STATUS_SOLICITACAO_ATIVOS,
   TelefoneDuplicadoNoDiaError,
@@ -27,6 +28,23 @@ import {
  * textual abaixo dos imports estáticos não afeta a ordem real de execução.
  */
 vi.mock('server-only', () => ({}))
+
+/**
+ * Espião do SDK Firestore, usado APENAS pelos testes do guard de id de documento no fim deste
+ * arquivo: eles precisam provar que `FirestoreAgendamentoStore` recusa um id inendereçável ANTES
+ * de tocar o SDK, e isso só é observável a partir da classe real. Nenhum outro teste deste arquivo
+ * toca o SDK (todos usam `FakeAgendamentoStore` ou símbolos puros), então o mock é inerte para
+ * eles. Não existe símbolo test-only em produção: os testes entram pela interface pública da
+ * classe exportada.
+ */
+const { getFirestore } = vi.hoisted(() => ({ getFirestore: vi.fn() }))
+
+vi.mock('firebase-admin/firestore', () => ({
+  getFirestore,
+  FieldValue: { serverTimestamp: () => 'server-timestamp' },
+}))
+
+vi.mock('./admin', () => ({ getFirebaseAdminApp: () => ({}) }))
 
 /**
  * Fake transacional determinístico da porta `AgendamentoStore` (Iron Law #6 / §3 da task):
@@ -470,5 +488,92 @@ describe('agendamentoStore — leituras da porta (FakeAgendamentoStore)', () => 
     const resultado = await store.carregarConfiguracaoSucesso()
 
     expect(resultado).toEqual(CONFIGURACAO_SUCESSO_FALLBACK)
+  })
+})
+
+/**
+ * CAUSA-RAIZ: `profissionalId` e `data` chegam de payload público e são usados como (parte de) ID
+ * de documento Firestore — `.doc(profissionalId)` e `.doc(`{profissionalId}_{data}`)`. Como
+ * `.doc()` trata `/` como separador de path, `prof-1/sub/x` produz um caminho de 4 segmentos
+ * (`profissionais/prof-1/sub/x`), documento VÁLIDO em subcoleção: o chamador escolheria o
+ * documento LIDO, não o procurado. O portão de formato do Route Handler (T7) é a primeira linha;
+ * estes casos provam a segunda — a porta não confia cegamente no chamador.
+ */
+describe('FirestoreAgendamentoStore — id de documento não confia cegamente no chamador', () => {
+  /**
+   * Firestore mínimo: `collection()` devolve algo com `doc()`, e `runTransaction` executa o
+   * callback com uma transação espiã. O guard dispara antes de qualquer uso desses retornos, e é
+   * exatamente isso que as asserções verificam.
+   */
+  function firestoreEspiao() {
+    const doc = vi.fn(() => ({ id: 'doc-novo' }))
+    const collection = vi.fn(() => ({ doc }))
+    const transacao = { get: vi.fn(), set: vi.fn() }
+    const runTransaction = vi.fn((executar: (t: typeof transacao) => Promise<unknown>) =>
+      executar(transacao)
+    )
+    getFirestore.mockReturnValue({ collection, runTransaction })
+    return { doc, transacao }
+  }
+
+  it.each([
+    ['profissionalId com separador de path', 'prof-1/sub/x', '2026-08-20'],
+    ['data com separador de path', 'prof-1', '2026-08-20/../outra'],
+    ['profissionalId acima do limite de id do Firestore', 'p'.repeat(1501), '2026-08-20'],
+  ])(
+    'listarHorariosElegiveis: %s — recusa antes de montar a referência de documento',
+    async (_descricao, profissionalId, data) => {
+      const { doc } = firestoreEspiao()
+      const store = new FirestoreAgendamentoStore()
+
+      await expect(store.listarHorariosElegiveis(profissionalId, data)).rejects.toThrow(
+        'não é um id de documento válido'
+      )
+      expect(doc).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each([
+    ['profissionalId com separador de path', 'prof-1/sub/x', '2026-08-20'],
+    ['data com separador de path', 'prof-1', '2026-08-20/../outra'],
+  ])(
+    'criarSolicitacaoAgendamento: %s — recusa sem ler nem escrever nada na transação',
+    async (_descricao, profissionalId, data) => {
+      const { transacao } = firestoreEspiao()
+      const store = new FirestoreAgendamentoStore()
+
+      await expect(
+        store.criarSolicitacaoAgendamento({ ...DTO_BASE, profissionalId, data })
+      ).rejects.toThrow('não é um id de documento válido')
+      expect(transacao.get).not.toHaveBeenCalled()
+      expect(transacao.set).not.toHaveBeenCalled()
+    }
+  )
+
+  it('a mensagem do erro nunca ecoa o valor recusado (origem pública, tamanho arbitrário)', async () => {
+    firestoreEspiao()
+    const store = new FirestoreAgendamentoStore()
+    const profissionalIdMalicioso = `prof-1/sub/${'x'.repeat(1000)}`
+
+    const erro = await store
+      .listarHorariosElegiveis(profissionalIdMalicioso, '2026-08-20')
+      .catch((erroCapturado: unknown) => erroCapturado)
+
+    expect(erro).toBeInstanceOf(Error)
+    expect((erro as Error).message).toBe(
+      '[agendamentoStore] profissionalId não é um id de documento válido'
+    )
+    expect((erro as Error).message).not.toContain('xxx')
+  })
+
+  // Companion positivo: o guard recusa o inendereçável, não o legítimo — id válido segue o fluxo
+  // normal e chega a montar a referência de documento no SDK.
+  it('id de documento legítimo passa e a leitura segue para o Firestore', async () => {
+    const { doc } = firestoreEspiao()
+    const store = new FirestoreAgendamentoStore()
+
+    await store.listarHorariosElegiveis('prof-1', '2026-08-20').catch(() => undefined)
+
+    expect(doc).toHaveBeenCalledWith('prof-1_2026-08-20')
   })
 })

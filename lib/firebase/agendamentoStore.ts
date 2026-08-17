@@ -66,9 +66,34 @@ export const CONFIGURACAO_SUCESSO_FALLBACK: ConfiguracaoSucesso = {
   avisos: ['O horário só é considerado definitivo após a confirmação.'],
 }
 
+/**
+ * Comprimento máximo de um ID de documento Firestore (1500 bytes). É o limite da própria
+ * plataforma, não um número escolhido aqui: acima disso o valor não é endereçável.
+ */
+const ID_DOCUMENTO_MAX_LENGTH = 1500
+
+/**
+ * Defesa em profundidade: garante que `valor` é endereçável como ID de documento antes de virar
+ * um. `.doc()` do Firestore trata `/` como separador de path, então `prof-1/sub/x` endereçaria um
+ * documento em subcoleção em vez do ID pretendido — quem controla o valor passaria a controlar o
+ * documento LIDO, não só o procurado. Route Handlers já recusam esses valores no portão de
+ * formato do payload (`validarCamposDeSlot`, T7); este guard existe porque a porta não deve
+ * confiar cegamente no chamador — se ele for alcançado, houve bypass ou bug de chamador, e um
+ * erro alto (500 + log no handler) é a resposta certa: silenciar viraria um resultado de domínio
+ * plausível e esconderia a falha.
+ *
+ * Nunca ecoa `valor` na mensagem: ele é potencialmente enorme e de origem pública.
+ */
+function comoIdDeDocumento(valor: string, campo: string): string {
+  if (!valor || valor.length > ID_DOCUMENTO_MAX_LENGTH || valor.includes('/')) {
+    throw new Error(`[agendamentoStore] ${campo} não é um id de documento válido`)
+  }
+  return valor
+}
+
 /** Id do documento `disponibilidades/{profissionalId}_{data}` (tech_spec.md §7.4). */
 function idDocumentoDisponibilidade(profissionalId: string, data: string): string {
-  return `${profissionalId}_${data}`
+  return `${comoIdDeDocumento(profissionalId, 'profissionalId')}_${comoIdDeDocumento(data, 'data')}`
 }
 
 /**
@@ -309,7 +334,9 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
     const novoDocumentoRef = firestore.collection(NOME_COLECAO_AGENDAMENTOS).doc()
 
     return firestore.runTransaction(async (transaction) => {
-      const profissionalRef = firestore.collection(NOME_COLECAO_PROFISSIONAIS).doc(dto.profissionalId)
+      const profissionalRef = firestore
+        .collection(NOME_COLECAO_PROFISSIONAIS)
+        .doc(comoIdDeDocumento(dto.profissionalId, 'profissionalId'))
       const disponibilidadeRef = firestore
         .collection(NOME_COLECAO_DISPONIBILIDADES)
         .doc(idDocumentoDisponibilidade(dto.profissionalId, dto.data))

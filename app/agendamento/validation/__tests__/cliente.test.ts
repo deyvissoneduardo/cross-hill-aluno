@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatarTelefoneExibicao,
   normalizarTelefoneBrasileiro,
   validarNomeCliente,
   validarTelefoneCliente,
@@ -51,6 +52,37 @@ describe('validarTelefoneCliente', () => {
       })
     }
   )
+})
+
+describe('formatarTelefoneExibicao', () => {
+  it.each([
+    ['5561999999999', '(61) 99999-9999'],
+    ['5511999998888', '(11) 99999-8888'],
+    ['551133334444', '(11) 3333-4444'],
+  ])('deriva a máscara de exibição de "%s": "%s"', (telefoneNormalizado, esperado) => {
+    expect(formatarTelefoneExibicao(telefoneNormalizado)).toBe(esperado)
+  })
+
+  it('é a inversa de normalizarTelefoneBrasileiro: normalizar a máscara devolve a entrada', () => {
+    const telefoneNormalizado = '5561999999999'
+
+    const exibicao = formatarTelefoneExibicao(telefoneNormalizado)
+
+    expect(exibicao).toBe('(61) 99999-9999')
+    expect(normalizarTelefoneBrasileiro(exibicao)).toBe(telefoneNormalizado)
+  })
+
+  it('nunca ecoa texto livre: entrada fora do contrato devolve só dígitos, limitados a 13', () => {
+    // Chamador que não passou por `validarTelefoneCliente`. A saída é limitada por construção —
+    // é essa propriedade que impede o campo persistido de ter tamanho arbitrário.
+    const entradaAbusiva = `<script>${'9'.repeat(50_000)}</script>`
+
+    const exibicao = formatarTelefoneExibicao(entradaAbusiva)
+
+    expect(exibicao).toBe('9999999999999')
+    expect(exibicao).toHaveLength(13)
+    expect(exibicao).not.toContain('script')
+  })
 })
 
 describe('validarNomeCliente', () => {

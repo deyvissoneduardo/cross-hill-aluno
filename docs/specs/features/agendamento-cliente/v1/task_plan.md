@@ -4,7 +4,7 @@
 - **Feature/Projeto**: Agendamento do cliente sem conta
 - **Responsável (Tech Lead)**: usuário
 - **Data**: 2026-08-11
-- **Status**: Rascunho
+- **Status**: Concluído
 - **TECH_SPEC**: `docs/specs/features/agendamento-cliente/v1/tech_spec.md`
 - **PRD**: `docs/prds/features/agendamento-cliente/v1/prd.md`
 
@@ -40,15 +40,15 @@ Executar a frente pública de solicitação de agendamento sem conta, com BFF p�
 | T3 | Validação do cliente e Firebase Admin server-only | [T3](tasks/T3.md) | 1 | T1, T2 | Não | medium | Concluído |
 | T4 | Store Firestore transacional e fake determinístico | [T4](tasks/T4.md) | 1 | T1, T2, T3 | Não | medium | Concluído |
 | T5 | BFF público de leitura | [T5](tasks/T5.md) | 2 | T1, T2, T4 | Não | medium | Concluído |
-| T6 | Contrato de erros públicos e antiabuso do POST | [T6](tasks/T6.md) | 2 | T1, T2, T3, T4 | Não | medium | Em Progresso |
-| T7 | POST público de agendamento: validação e caminho feliz | [T7](tasks/T7.md) | 2 | T1, T2, T3, T4, T6 | Não | medium | Bloqueado (dependência T6) |
-| T8 | POST público de agendamento: concorrência e duplicidade | [T8](tasks/T8.md) | 2 | T1, T2, T3, T4, T6, T7 | Não | medium | Bloqueado (dependência T4, T6, T7) |
-| T9 | Repositories client-side tipados | [T9](tasks/T9.md) | 2 | T1, T2, T5, T7, T8 | Não | low | Bloqueado (dependência T5, T7, T8) |
+| T6 | Contrato de erros públicos e antiabuso do POST | [T6](tasks/T6.md) | 2 | T1, T2, T3, T4 | Não | medium | Concluído |
+| T7 | POST público de agendamento: validação e caminho feliz | [T7](tasks/T7.md) | 2 | T1, T2, T3, T4, T6 | Não | medium | Concluído |
+| T8 | POST público de agendamento: concorrência e duplicidade | [T8](tasks/T8.md) | 2 | T1, T2, T3, T4, T6, T7 | Não | medium | Concluído |
+| T9 | Repositories client-side tipados | [T9](tasks/T9.md) | 2 | T1, T2, T5, T7, T8 | Não | low | Concluído |
 | T10 | Componentes UI globais Material Design 3 com Tailwind | [T10](tasks/T10.md) | 3 | T1, T2 | Não | medium | Concluído |
-| T11 | Estado local e etapa de identificação | [T11](tasks/T11.md) | 3 | T1, T2, T3, T9, T10 | Não | low | Bloqueado (dependência T9) |
-| T12 | Etapa de escolha de profissional, dia e horário | [T12](tasks/T12.md) | 3 | T9, T10, T11 | Não | medium | Bloqueado (dependência T9, T11) |
-| T13 | Revisão, envio e sucesso aguardando confirmação | [T13](tasks/T13.md) | 3 | T9, T10, T11, T12 | Não | medium | Bloqueado (dependência T9, T11, T12) |
-| T14 | Integração da rota pública e validação E2E | [T14](tasks/T14.md) | 4 | T10, T11, T12, T13 | Não | medium | Bloqueado (dependência T11, T12, T13) |
+| T11 | Estado local e etapa de identificação | [T11](tasks/T11.md) | 3 | T1, T2, T3, T9, T10 | Não | low | Concluído |
+| T12 | Etapa de escolha de profissional, dia e horário | [T12](tasks/T12.md) | 3 | T9, T10, T11 | Não | medium | Concluído |
+| T13 | Revisão, envio e sucesso aguardando confirmação | [T13](tasks/T13.md) | 3 | T9, T10, T11, T12 | Não | medium | Concluído |
+| T14 | Integração da rota pública e validação E2E | [T14](tasks/T14.md) | 4 | T10, T11, T12, T13 | Não | medium | Concluído |
 
 ### 4.1 Ordem de Execução
 
@@ -95,14 +95,14 @@ T10 + T11 + T12 + T13 -> T14
 
 ## 7. Critérios de Conclusão da Feature
 A feature será considerada concluída quando:
-- [ ] Todas as 14 tasks estiverem completas.
-- [ ] Não existir task com risco alto neste plano.
-- [ ] Testes unitários, integração e E2E definidos nas tasks estiverem implementados.
-- [ ] `next build`, lint e suites configuradas executarem sem falhas.
-- [ ] Todos os critérios do PRD CA-01 a CA-17 estiverem cobertos.
-- [ ] Nenhuma resposta pública expuser dados ou quantidade de terceiros.
-- [ ] A UI funcionar em 320px, com foco visível e reduced motion respeitado.
-- [ ] O fluxo final não indicar confirmação definitiva.
+- [x] Todas as 14 tasks estiverem completas.
+- [x] Não existir task com risco alto neste plano.
+- [x] Testes unitários, integração e E2E definidos nas tasks estiverem implementados.
+- [x] `next build`, lint e suites configuradas executarem sem falhas.
+- [x] Todos os critérios do PRD CA-01 a CA-17 estiverem cobertos.
+- [x] Nenhuma resposta pública expuser dados ou quantidade de terceiros.
+- [x] A UI funcionar em 320px, com foco visível e reduced motion respeitado.
+- [x] O fluxo final não indicar confirmação definitiva.
 
 ---
 

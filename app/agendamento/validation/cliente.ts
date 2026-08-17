@@ -50,6 +50,21 @@ const NOME_MAX_LENGTH = 80
 const PADRAO_CONTEUDO_ABUSIVO = /[<>]|javascript:/i
 
 /**
+ * Forma canônica de um telefone brasileiro já normalizado: DDI `55` + DDD (`11`-`99`) + número
+ * local de 8 (fixo) ou 9 (celular) dígitos. Fonte única para quem VALIDA
+ * (`validarTelefoneCliente`) e para quem FORMATA (`formatarTelefoneExibicao`) — as duas precisam
+ * concordar sobre o que é um telefone válido, senão a exibição derivaria de uma leitura própria.
+ */
+const PADRAO_TELEFONE_NORMALIZADO = /^55([1-9][1-9])(\d{8,9})$/
+
+/**
+ * Máximo de dígitos de um telefone normalizado (`55` + DDD + 9 dígitos). Usado para limitar o
+ * material de entrada de `formatarTelefoneExibicao`, garantindo que sua saída seja sempre
+ * limitada — o análogo, para telefone, do que `NOME_MAX_LENGTH` é para o nome.
+ */
+const TELEFONE_NORMALIZADO_MAX_DIGITOS = 13
+
+/**
  * Normaliza um telefone brasileiro para dígitos puros com DDI `55` (ex.: `5561999999999`).
  * Função pura de transformação de formato — não valida DDD/tamanho; ver `validarTelefoneCliente`.
  */
@@ -75,7 +90,7 @@ export function validarTelefoneCliente(telefoneBruto: string): ResultadoValidaca
   }
 
   const telefoneNormalizado = normalizarTelefoneBrasileiro(telefoneBruto)
-  const match = /^55([1-9][1-9])(\d{8,9})$/.exec(telefoneNormalizado)
+  const match = PADRAO_TELEFONE_NORMALIZADO.exec(telefoneNormalizado)
 
   if (!match) {
     return {
@@ -101,6 +116,34 @@ export function validarTelefoneCliente(telefoneBruto: string): ResultadoValidaca
   }
 
   return { valido: true, telefoneNormalizado }
+}
+
+/**
+ * Deriva a forma de EXIBIÇÃO de um telefone a partir do seu valor já normalizado — a inversa de
+ * `normalizarTelefoneBrasileiro`. Máscara determinística: `(DD) NNNNN-NNNN` para celular e
+ * `(DD) NNNN-NNNN` para fixo.
+ *
+ * Existe para que o valor exibido/persistido seja DERIVADO do dado validado, e nunca o texto
+ * bruto que o cliente digitou: `normalizarTelefoneBrasileiro` descarta tudo que não é dígito, de
+ * modo que o texto original jamais passa por um portão de validação — um payload com megabytes
+ * de lixo em volta de um telefone válido seria aprovado e gravado verbatim. Derivando aqui, a
+ * saída é estruturalmente limitada (no máximo `TELEFONE_NORMALIZADO_MAX_DIGITOS` dígitos, logo
+ * no máximo 15 caracteres com a máscara), sem depender de truncar entrada arbitrária.
+ *
+ * Função total: entrada fora da forma canônica (chamador que não passou por
+ * `validarTelefoneCliente`) devolve apenas os dígitos, já limitados — nunca ecoa texto livre.
+ */
+export function formatarTelefoneExibicao(telefoneNormalizado: string): string {
+  const digitos = telefoneNormalizado
+    .replace(/\D/g, '')
+    .slice(0, TELEFONE_NORMALIZADO_MAX_DIGITOS)
+  const match = PADRAO_TELEFONE_NORMALIZADO.exec(digitos)
+  if (!match) {
+    return digitos
+  }
+
+  const [, ddd, numeroLocal] = match
+  return `(${ddd}) ${numeroLocal.slice(0, -4)}-${numeroLocal.slice(-4)}`
 }
 
 /**

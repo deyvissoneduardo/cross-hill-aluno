@@ -179,6 +179,50 @@
 
 ---
 
+## [repeated_assertion_shape] Asserção de erro público duplicada em 5+ testes
+
+**Regra que isto sugere:** extrair um helper `expectErroPublico(response, status, codigo, error)` para os testes de Route Handlers públicos de agendamento.
+
+**O que ela faria (simples):** hoje o par `expect(response.status).toBe(N); expect(body).toEqual({ error, codigo })` se repete quase idêntico em 5 testes do mesmo arquivo (payload inválido, JSON malformado, limite antiabuso, SlotIndisponivelError, TelefoneDuplicadoNoDiaError, erro genérico); um helper compartilhado reduziria repetição e padronizaria a asserção para os próximos Route Handlers públicos da feature (T8 em diante).
+
+- Evidência: `expect(response.status).toBe(X); expect(body).toEqual({ error, codigo })` repetido em `app/api/public/agendamentos/route.success.test.ts:126,142,156,170,185,199` — `T7 / POST público de agendamento`
+- Sinal: `repeated_assertion_shape` · Origem: `agent-spec-qa-validator` · 2026-08-16T00:00:00Z
+
+---
+
+## [convention_drift] Nomenclatura de arquivo de teste de Route Handler
+
+**Regra que isto sugere:** Route Handlers de `app/api/**` devem ter seus testes em `route.test.ts` (sem sufixos temáticos como `.success.`), cobrindo caminho feliz e caminhos de erro no mesmo arquivo.
+
+**O que ela faria (simples):** T4/T5/T6 estabeleceram consistentemente `route.test.ts` como nome de arquivo de teste de handler, mas essa convenção nunca foi escrita em `.claude/rules/*`; sem regra explícita, T7 introduziu `route.success.test.ts`, quebrando o padrão e criando um nome que nem reflete o conteúdo real do arquivo (cobre também 12 casos de erro).
+
+- Evidência: `app/api/public/agendamentos/route.success.test.ts` versus `app/api/public/profissionais/route.test.ts`, `app/api/public/configuracao/sucesso/route.test.ts`, `app/api/public/profissionais/[profissionalId]/dias/route.test.ts` — `T7 / Route Handler POST público de agendamento`
+- Sinal: `convention_drift` · Origem: `staff-review` · 2026-08-16T00:00:00Z
+
+---
+
+## [repeated_fixture] Boilerplate de setup MSW por arquivo
+
+**Regra que isto sugere:** centralizar o setup padrão de MSW (`setupServer` + `beforeAll/afterEach/afterAll`) num helper compartilhado de teste da feature.
+
+**O que ela faria (simples):** os dois arquivos de teste de T9 repetem exatamente o mesmo bloco de 5 linhas de setup/teardown do MSW; um helper único evita drift quando um novo arquivo de teste da feature precisar do mesmo padrão.
+
+- Evidência: `setupServer()+beforeAll/afterEach/afterAll` idênticos em `app/agendamento/repositories/__tests__/profissionais.integration.test.ts:24` e `agendamentos.integration.test.ts:21` — `T9 / repositories client-side do BFF de agendamento`
+- Sinal: `repeated_fixture` · Origem: `agent-spec-qa-validator` · 2026-08-16T00:00:00Z
+
+---
+
+## [repeated_assertion_shape] Asserção de erro tipado em ResultadoRepository
+
+**Regra que isto sugere:** extrair um matcher/helper `expectErro(resultado, tipo, mensagem)` para o shape `{ ok: false, erro: { tipo, mensagem } }`.
+
+**O que ela faria (simples):** o mesmo formato de asserção se repete 5 vezes em `agendamentos.integration.test.ts` variando só tipo/mensagem; um helper reduziria ruído sem perder a precisão da asserção literal exigida pela task.
+
+- Evidência: `expect(resultado).toEqual({ ok: false, erro: { tipo, mensagem } })` em `app/agendamento/repositories/__tests__/agendamentos.integration.test.ts:98,116,134,152,170` — `T9 / agendamentosRepository.criar`
+- Sinal: `repeated_assertion_shape` · Origem: `agent-spec-qa-validator` · 2026-08-16T00:00:00Z
+
+---
+
 ## [repeated_assertion_shape] Padrão de asserção para erro 500 genérico
 
 **Regra que isto sugere:** extrair um helper compartilhado (ex.: `expectGenericServerError(response, body)`) para o padrão "status 500 + corpo só com chave `error` + sem detalhe do erro original" repetido nos handlers públicos.

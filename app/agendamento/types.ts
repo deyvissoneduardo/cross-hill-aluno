@@ -93,3 +93,30 @@ export interface SolicitacaoAgendamentoDTO {
   /** Horário no formato `HH:mm`. */
   horario: string
 }
+
+/**
+ * Erro tipado de repository client-side (T9 — `app/agendamento/repositories/*`).
+ *
+ * Sentinela estável que a UI (T10-T14) consome para decidir banner/ação — nunca `Response`
+ * cru, `Error` de fetch ou mensagem/stack de exceção interna. Os cinco primeiros valores de
+ * `tipo` espelham 1:1 `CodigoErroPublicoAgendamento` de `app/api/public/agendamentos/errors.ts`
+ * (contrato REAL já implementado em T6/T7/T8 — usa `TELEFONE_DUPLICADO_NO_DIA`, não
+ * `DUPLICIDADE_DIA`). `REDE` não tem equivalente HTTP: cobre falha de transporte (fetch
+ * rejeitando — offline, DNS, timeout), que a UI precisa diferenciar de "servidor recusou".
+ *
+ * Os endpoints GET (T5) só falham com `{ error }` genérico sem `codigo` — por isso só podem
+ * produzir `REDE` ou `SERVIDOR`; o POST de criação (T7/T8) pode produzir qualquer variante.
+ */
+export type ErroRepository =
+  | { tipo: 'REDE' }
+  | { tipo: 'PAYLOAD_INVALIDO'; mensagem: string }
+  | { tipo: 'SLOT_INDISPONIVEL'; mensagem: string }
+  | { tipo: 'TELEFONE_DUPLICADO_NO_DIA'; mensagem: string }
+  | { tipo: 'LIMITE_ANTIABUSO'; mensagem: string }
+  | { tipo: 'SERVIDOR'; mensagem: string }
+
+/**
+ * Resultado discriminado de uma chamada de repository (T9). Nunca expõe `Response` cru: quem
+ * chama um repository sempre recebe `{ ok: true; dados }` ou `{ ok: false; erro }`.
+ */
+export type ResultadoRepository<T> = { ok: true; dados: T } | { ok: false; erro: ErroRepository }

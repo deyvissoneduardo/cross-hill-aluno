@@ -23,8 +23,8 @@ steps:
     status: completed
     summary: "14 tasks, 4 fases, 0 paralelizáveis. US cobertas: 9/9; tasks high quebradas em low/medium"
   execution:
-    status: in_progress
+    status: completed
     tasks_total: 14
-    tasks_completed: 5
+    tasks_completed: 14
     tasks_blocked: 0
-    summary: "T3 desbloqueada e T10 concluída (retomadas de sessão anterior). T4 concluída após 2 ciclos de correção. T5 e T6 liberadas para execução (Fase 2)."
+    summary: "Todas as 14 tasks concluídas. T14 integrou a rota pública, layout/tokens globais e E2E; QA e Tech Review aprovados sem débitos."
