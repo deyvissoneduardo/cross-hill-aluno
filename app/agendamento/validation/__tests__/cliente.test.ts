@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatarTelefoneExibicao,
+  formatarTelefoneDigitado,
   normalizarTelefoneBrasileiro,
   validarNomeCliente,
   validarTelefoneCliente,
@@ -13,6 +14,18 @@ describe('normalizarTelefoneBrasileiro', () => {
     ['11 3333-4444', '551133334444'],
   ])('normaliza "%s" para dígitos com DDI 55: "%s"', (entrada, esperado) => {
     expect(normalizarTelefoneBrasileiro(entrada)).toBe(esperado)
+  })
+})
+
+describe('formatarTelefoneDigitado', () => {
+  it.each([
+    ['6', '(6'],
+    ['61999', '(61) 999'],
+    ['61999999999', '(61) 99999-9999'],
+    ['6133334444', '(61) 3333-4444'],
+    ['61abc99999-9999xyz123', '(61) 99999-9999'],
+  ])('CT-043: mascara e limita "%s" como "%s"', (entrada, esperado) => {
+    expect(formatarTelefoneDigitado(entrada)).toBe(esperado)
   })
 })
 

@@ -64,7 +64,7 @@ export const CONFIGURACAO_SUCESSO_FALLBACK: ConfiguracaoSucesso = {
   descricao: 'Sua solicitação de agendamento foi registrada e aguarda confirmação.',
   regras: [],
   dicas: [],
-  avisos: ['O horário só é considerado definitivo após a confirmação.'],
+  avisos: [],
 }
 
 /**

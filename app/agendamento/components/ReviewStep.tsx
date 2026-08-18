@@ -11,7 +11,6 @@ import type { CriarSolicitacaoAgendamentoDTO, ErroRepository } from '../types'
 const MENSAGEM_FALHA_ENVIO = 'Não foi possível concluir sua solicitação. Tente novamente.'
 const MENSAGEM_ANTIABUSO = 'Não foi possível concluir sua solicitação. Tente novamente mais tarde.'
 const MENSAGEM_DUPLICIDADE = 'Você já possui um agendamento para este dia.'
-const AVISO_CONFIRMACAO = 'A confirmação será feita pelo administrador.'
 
 export function ReviewStep() {
   const { state, dispatch } = useAppointmentFlow()
@@ -60,7 +59,6 @@ export function ReviewStep() {
   return (
     <div className="flex flex-col gap-5">
       <SummaryList items={resumo} />
-      <InlineBanner tone="warning">{AVISO_CONFIRMACAO}</InlineBanner>
 
       {submitError ? (
         <InlineBanner tone="error" action={acaoErro}>

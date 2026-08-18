@@ -27,6 +27,8 @@ const VAZIO_PROFISSIONAIS = 'Nenhum profissional disponível no momento.'
 const VAZIO_DIAS = 'Não há datas disponíveis para este profissional.'
 const VAZIO_HORARIOS = 'Não há horários disponíveis nesta data.'
 const DIAS_DA_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const CLASSE_NAVEGACAO_CALENDARIO =
+  'rounded-xl border border-[var(--accent)] bg-[var(--surface-muted)] px-3 py-2 text-sm font-semibold text-[var(--accent)] shadow-sm transition-colors hover:bg-[var(--accent)] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]'
 
 export function ScheduleStep() {
   const { state, dispatch } = useAppointmentFlow()
@@ -48,7 +50,8 @@ export function ScheduleStep() {
   const [profissionaisRetry, setProfissionaisRetry] = useState(0)
   const [diasRetry, setDiasRetry] = useState(0)
   const [horariosRetry, setHorariosRetry] = useState(0)
-  const [mesVisivel, setMesVisivel] = useState(() => inicioDoMes(new Date()))
+  const [semanaVisivel, setSemanaVisivel] = useState(() => inicioDaSemana(new Date()))
+  const [hoje] = useState(() => formatarDataIsoLocal(new Date()))
 
   const profissionalSelecionado = state.selection.profissional
   const diaSelecionado = state.selection.dia
@@ -72,7 +75,7 @@ export function ScheduleStep() {
   )
   const horarios = horariosStatus === 'success' ? horariosResource.dados : []
   const diasDisponiveis = useMemo(() => new Map(dias.map((dia) => [dia.data, dia])), [dias])
-  const diasDoCalendario = useMemo(() => montarMes(mesVisivel), [mesVisivel])
+  const diasDoCalendario = useMemo(() => montarSemana(semanaVisivel), [semanaVisivel])
 
   useEffect(() => {
     if (!profissionaisKey) return
@@ -171,7 +174,7 @@ export function ScheduleStep() {
     if (profissionaisStatus === 'loading' || profissionaisStatus === 'idle') {
       return (
         <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 35 }, (_, index) => (
+          {Array.from({ length: 7 }, (_, index) => (
             <SkeletonBlock key={index} height="3rem" label="Carregando calendário" />
           ))}
         </div>
@@ -217,7 +220,7 @@ export function ScheduleStep() {
     if (diasStatus === 'loading') {
       return (
         <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 35 }, (_, index) => (
+          {Array.from({ length: 7 }, (_, index) => (
             <SkeletonBlock key={index} height="3rem" label="Carregando calendário" />
           ))}
         </div>
@@ -243,20 +246,20 @@ export function ScheduleStep() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            className="rounded-lg px-3 py-2 text-sm text-[var(--text-muted)] hover:bg-black/5"
-            aria-label="Mês anterior"
-            onClick={() => setMesVisivel((mes) => alterarMes(mes, -1))}
+            className={CLASSE_NAVEGACAO_CALENDARIO}
+            aria-label="Semana anterior"
+            onClick={() => setSemanaVisivel((semana) => alterarSemana(semana, -1))}
           >
             ←
           </button>
           <p className="font-semibold capitalize text-[var(--foreground)]">
-            {formatarMes(mesVisivel)}
+            {formatarIntervaloDaSemana(semanaVisivel)}
           </p>
           <button
             type="button"
-            className="rounded-lg px-3 py-2 text-sm text-[var(--text-muted)] hover:bg-black/5"
-            aria-label="Próximo mês"
-            onClick={() => setMesVisivel((mes) => alterarMes(mes, 1))}
+            className={CLASSE_NAVEGACAO_CALENDARIO}
+            aria-label="Próxima semana"
+            onClick={() => setSemanaVisivel((semana) => alterarSemana(semana, 1))}
           >
             →
           </button>
@@ -268,10 +271,9 @@ export function ScheduleStep() {
               {dia}
             </span>
           ))}
-          {diasDoCalendario.map((celula, index) => {
-            if (!celula) return <span key={`vazio-${index}`} aria-hidden="true" />
-
-            const diaDisponivel = diasDisponiveis.get(celula.data)
+          {diasDoCalendario.map((celula) => {
+            const diaDisponivel =
+              celula.data >= hoje ? diasDisponiveis.get(celula.data) : undefined
             const selecionado = diaSelecionado?.data === celula.data
             return (
               <button
@@ -304,11 +306,21 @@ export function ScheduleStep() {
     return (
       <div className="flex flex-col gap-3" aria-label="Calendário de disponibilidade">
         <div className="flex items-center justify-between gap-3">
-          <button type="button" aria-label="Mês anterior" onClick={() => setMesVisivel((mes) => alterarMes(mes, -1))}>
+          <button
+            type="button"
+            className={CLASSE_NAVEGACAO_CALENDARIO}
+            aria-label="Semana anterior"
+            onClick={() => setSemanaVisivel((semana) => alterarSemana(semana, -1))}
+          >
             ←
           </button>
-          <p className="font-semibold capitalize text-[var(--foreground)]">{formatarMes(mesVisivel)}</p>
-          <button type="button" aria-label="Próximo mês" onClick={() => setMesVisivel((mes) => alterarMes(mes, 1))}>
+          <p className="font-semibold capitalize text-[var(--foreground)]">{formatarIntervaloDaSemana(semanaVisivel)}</p>
+          <button
+            type="button"
+            className={CLASSE_NAVEGACAO_CALENDARIO}
+            aria-label="Próxima semana"
+            onClick={() => setSemanaVisivel((semana) => alterarSemana(semana, 1))}
+          >
             →
           </button>
         </div>
@@ -316,21 +328,17 @@ export function ScheduleStep() {
           {DIAS_DA_SEMANA.map((dia) => (
             <span key={dia} className="py-1 text-xs font-medium text-[var(--text-muted)]">{dia}</span>
           ))}
-          {diasDoCalendario.map((celula, index) =>
-            celula ? (
-              <button
-                key={celula.data}
-                type="button"
-                disabled
-                aria-label={`${celula.label} indisponível`}
-                className="min-h-12 cursor-not-allowed rounded-xl border border-transparent bg-black/5 text-sm font-semibold text-[var(--text-muted)] opacity-55"
-              >
-                {celula.dia}
-              </button>
-            ) : (
-              <span key={`vazio-${index}`} aria-hidden="true" />
-            )
-          )}
+          {diasDoCalendario.map((celula) => (
+            <button
+              key={celula.data}
+              type="button"
+              disabled
+              aria-label={`${celula.label} indisponível`}
+              className="min-h-12 cursor-not-allowed rounded-xl border border-transparent bg-black/5 text-sm font-semibold text-[var(--text-muted)] opacity-55"
+            >
+              {celula.dia}
+            </button>
+          ))}
         </div>
       </div>
     )
@@ -381,38 +389,34 @@ export function ScheduleStep() {
   }
 }
 
-function inicioDoMes(data: Date): Date {
-  return new Date(data.getFullYear(), data.getMonth(), 1)
+function inicioDaSemana(data: Date): Date {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate() - data.getDay())
 }
 
-function alterarMes(data: Date, quantidade: number): Date {
-  return new Date(data.getFullYear(), data.getMonth() + quantidade, 1)
+function alterarSemana(data: Date, quantidade: number): Date {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate() + quantidade * 7)
 }
 
-function formatarMes(data: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(data)
+function formatarIntervaloDaSemana(inicio: Date): string {
+  const fim = alterarSemana(inicio, 1)
+  fim.setDate(fim.getDate() - 1)
+  const formatador = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
+  return `${formatador.format(inicio)} – ${formatador.format(fim)}`
 }
 
-function montarMes(data: Date): Array<{ data: string; dia: number; label: string } | null> {
-  const ano = data.getFullYear()
-  const mes = data.getMonth()
-  const totalDias = new Date(ano, mes + 1, 0).getDate()
-  const celulas: Array<{ data: string; dia: number; label: string } | null> = Array.from(
-    { length: new Date(ano, mes, 1).getDay() },
-    () => null
-  )
+function formatarDataIsoLocal(data: Date): string {
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
+}
 
-  for (let dia = 1; dia <= totalDias; dia += 1) {
-    const referencia = new Date(ano, mes, dia)
-    const dataIso = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
-    celulas.push({
-      data: dataIso,
-      dia,
+function montarSemana(inicio: Date): Array<{ data: string; dia: number; label: string }> {
+  return Array.from({ length: 7 }, (_, indice) => {
+    const referencia = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + indice)
+    return {
+      data: formatarDataIsoLocal(referencia),
+      dia: referencia.getDate(),
       label: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(referencia),
-    })
-  }
-
-  return celulas
+    }
+  })
 }
 
 function statusDoRecurso<T>(resource: ResourceState<T>, key: string | null): LoadState {

@@ -21,8 +21,10 @@ import { AppointmentFlow } from '../components/AppointmentFlow'
 const PROFISSIONAIS_ATIVOS = [{ id: 'profissional', nome: 'Ana Souza' }]
 
 const DIAS_LIBERADOS = [
+  { data: '2026-08-17', label: 'Seg, 17/08' },
   { data: '2026-08-20', label: 'Qui, 20/08' },
   { data: '2026-08-22', label: 'Sáb, 22/08' },
+  { data: '2026-08-27', label: 'Qui, 27/08' },
 ]
 
 const HORARIOS_ELEGIVEIS = [{ horario: '09:00' }, { horario: '10:30' }]
@@ -60,8 +62,27 @@ describe('AppointmentFlow — disponibilidade', () => {
 
     expect(await screen.findByRole('button', { name: /Qui, 20\/08/i })).toBeEnabled()
     expect(screen.queryByRole('heading', { name: 'Profissional' })).toBeNull()
+    expect(screen.getByRole('button', { name: /17 de agosto de 2026 indisponível/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Sáb, 22\/08/i })).toBeEnabled()
     expect(screen.getByRole('button', { name: /21 de agosto de 2026 indisponível/i })).toBeDisabled()
+  })
+
+  it('CT-044 navega uma semana por vez e mantém dias anteriores a hoje inativos', async () => {
+    server.use(
+      http.get('/api/public/profissionais', () => HttpResponse.json(PROFISSIONAIS_ATIVOS)),
+      http.get('/api/public/profissionais/profissional/dias', () => HttpResponse.json(DIAS_LIBERADOS))
+    )
+    const user = userEvent.setup()
+
+    await renderScheduleStep()
+
+    expect(await screen.findByRole('button', { name: /17 de agosto de 2026 indisponível/i })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Qui, 27\/08/i })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Próxima semana' }))
+
+    expect(screen.getByRole('button', { name: /Qui, 27\/08/i })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /Qui, 20\/08/i })).toBeNull()
   })
 
   it('CT-008 empty_days_blocks_progress', async () => {

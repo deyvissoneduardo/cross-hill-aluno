@@ -4,7 +4,11 @@ import { FormEvent, useState } from 'react'
 
 import { FormField } from '@/components/ui/FormField'
 import { PrimaryButton } from '@/components/ui/PrimaryButton'
-import { validarNomeCliente, validarTelefoneCliente } from '../validation/cliente'
+import {
+  formatarTelefoneDigitado,
+  validarNomeCliente,
+  validarTelefoneCliente,
+} from '../validation/cliente'
 
 interface IdentificationErrors {
   nome?: string
@@ -24,6 +28,7 @@ export function IdentificationStep({ onContinue }: IdentificationStepProps) {
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [errors, setErrors] = useState<IdentificationErrors>({})
+  const identificacaoValida = validarNomeCliente(nome).valido && validarTelefoneCliente(telefone).valido
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -72,19 +77,22 @@ export function IdentificationStep({ onContinue }: IdentificationStepProps) {
         label="Telefone"
         value={telefone}
         onChange={(value) => {
-          setTelefone(value)
+          setTelefone(formatarTelefoneDigitado(value))
           if (errors.telefone) {
             setErrors((current) => ({ ...current, telefone: undefined }))
           }
         }}
         type="tel"
-        inputMode="tel"
+        inputMode="numeric"
         autoComplete="tel"
         placeholder="(61) 99999-9999"
+        maxLength={15}
         error={errors.telefone}
       />
 
-      <PrimaryButton type="submit">Continuar</PrimaryButton>
+      <PrimaryButton type="submit" disabled={!identificacaoValida}>
+        Continuar
+      </PrimaryButton>
     </form>
   )
 }

@@ -30,7 +30,7 @@ test.describe('agendamento do cliente', () => {
       telefone: '(61) 99999-9999',
     })
     await expect(page.getByRole('heading', { name: 'Revise sua solicitação' })).toBeVisible()
-    await expect(page.getByText('A confirmação será feita pelo administrador.')).toBeVisible()
+    await expect(page.getByText('A confirmação será feita pelo administrador.')).toHaveCount(0)
 
     await page.getByRole('button', { name: 'Solicitar agendamento' }).click()
 

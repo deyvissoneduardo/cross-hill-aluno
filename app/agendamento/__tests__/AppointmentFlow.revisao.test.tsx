@@ -51,7 +51,7 @@ describe('AppointmentFlow — revisão', () => {
     expect(screen.getByText('Qui, 20/08')).toBeInTheDocument()
     expect(screen.getByText('Horário')).toBeInTheDocument()
     expect(screen.getByText('09:00')).toBeInTheDocument()
-    expect(screen.getByText('A confirmação será feita pelo administrador.')).toBeInTheDocument()
+    expect(screen.queryByText('A confirmação será feita pelo administrador.')).toBeNull()
     expect(screen.getByRole('button', { name: 'Solicitar agendamento' })).toBeEnabled()
   })
 })

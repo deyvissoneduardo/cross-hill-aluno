@@ -31,17 +31,31 @@ describe('AppointmentFlow — identificação', () => {
     expect(screen.queryByLabelText(/senha|login|conta|perfil|cadastro/i)).toBeNull()
   })
 
-  it('blocks_continue_without_required_fields', async () => {
-    const user = userEvent.setup()
+  it('blocks_continue_without_required_fields', () => {
     render(<AppointmentFlow />)
-
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
 
     expect(screen.getByRole('heading', { name: 'Solicite seu horário' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1')
-    expect(screen.getByText('Informe seu nome.')).toHaveAttribute('role', 'alert')
-    expect(screen.getByText('Informe um telefone.')).toHaveAttribute('role', 'alert')
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled()
     expect(screen.queryByRole('heading', { name: 'Escolha seu horário' })).toBeNull()
+  })
+
+  it('CT-043: mascara o telefone, ignora letras, limita a 11 dígitos e só habilita dados válidos', async () => {
+    const user = userEvent.setup()
+    render(<AppointmentFlow />)
+
+    const nome = screen.getByLabelText('Nome')
+    const telefone = screen.getByLabelText('Telefone')
+    const continuar = screen.getByRole('button', { name: 'Continuar' })
+
+    await user.type(nome, 'João Silva')
+    await user.type(telefone, '61abc999999999123')
+
+    expect(telefone).toHaveValue('(61) 99999-9999')
+    expect(continuar).toBeEnabled()
+
+    await user.clear(nome)
+    expect(continuar).toBeDisabled()
   })
 
   it('advances_with_valid_identification', async () => {
@@ -50,6 +64,7 @@ describe('AppointmentFlow — identificação', () => {
 
     await user.type(screen.getByLabelText('Nome'), 'João Silva')
     await user.type(screen.getByLabelText('Telefone'), '(61) 99999-9999')
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
 
     expect(screen.getByRole('heading', { name: 'Escolha seu horário' })).toBeInTheDocument()

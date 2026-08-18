@@ -20,9 +20,10 @@ export interface FormFieldProps {
   /** Emitido com o valor já extraído do input. */
   onChange: (value: string) => void
   type?: 'text' | 'tel'
-  inputMode?: 'text' | 'tel'
+  inputMode?: 'text' | 'tel' | 'numeric'
   autoComplete?: string
   placeholder?: string
+  maxLength?: number
   /** Texto de apoio exibido abaixo do label. */
   hint?: string
   /** Mensagem de erro inline; quando presente, o campo entra em estado inválido. */
@@ -38,6 +39,7 @@ export function FormField({
   inputMode,
   autoComplete,
   placeholder,
+  maxLength,
   hint,
   error,
 }: FormFieldProps) {
@@ -64,6 +66,7 @@ export function FormField({
         inputMode={inputMode}
         autoComplete={autoComplete}
         placeholder={placeholder}
+        maxLength={maxLength}
         value={value}
         onChange={(evento) => onChange(evento.target.value)}
         aria-invalid={error ? true : undefined}

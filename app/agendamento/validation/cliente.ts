@@ -65,6 +65,28 @@ const PADRAO_TELEFONE_NORMALIZADO = /^55([1-9][1-9])(\d{8,9})$/
 const TELEFONE_NORMALIZADO_MAX_DIGITOS = 13
 
 /**
+ * Aplica a máscara nacional enquanto o cliente digita, descartando qualquer caractere que não
+ * seja número e limitando a entrada a DDD + 9 dígitos.
+ */
+export function formatarTelefoneDigitado(telefoneBruto: string): string {
+  const digitos = telefoneBruto.replace(/\D/g, '').slice(0, 11)
+
+  if (digitos.length <= 2) {
+    return digitos ? `(${digitos}` : ''
+  }
+
+  const ddd = digitos.slice(0, 2)
+  const numeroLocal = digitos.slice(2)
+
+  if (numeroLocal.length <= 4) {
+    return `(${ddd}) ${numeroLocal}`
+  }
+
+  const tamanhoPrefixo = numeroLocal.length <= 8 ? 4 : 5
+  return `(${ddd}) ${numeroLocal.slice(0, tamanhoPrefixo)}-${numeroLocal.slice(tamanhoPrefixo)}`
+}
+
+/**
  * Normaliza um telefone brasileiro para dígitos puros com DDI `55` (ex.: `5561999999999`).
  * Função pura de transformação de formato — não valida DDD/tamanho; ver `validarTelefoneCliente`.
  */
