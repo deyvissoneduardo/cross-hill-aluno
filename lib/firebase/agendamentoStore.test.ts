@@ -504,6 +504,100 @@ describe('agendamentoStore — leituras da porta (FakeAgendamentoStore)', () => 
   })
 })
 
+describe('FirestoreAgendamentoStore — configuração da tela de sucesso', () => {
+  it('carregarConfiguracaoSucesso combina titulo e descricao de pos_agendamentos/textos com dicas e avisos de configuracao/pos-agendamentos', async () => {
+    const getTextos = vi.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({
+        titulo: 'Solicitação recebida pela CrossHill',
+        descricao: 'A equipe vai confirmar seu horário pelo telefone informado.',
+      }),
+    })
+    const getConfiguracao = vi.fn().mockResolvedValue({
+      exists: true,
+      data: () => ({
+        dicas: ['Leve uma garrafa de água.', 'Chegue com alguns minutos de antecedência.'],
+        avisos: ['A solicitação ainda será confirmada pela equipe.'],
+      }),
+    })
+    const textosDoc = vi.fn(() => ({ get: getTextos }))
+    const configuracaoDoc = vi.fn(() => ({ get: getConfiguracao }))
+    const collection = vi.fn((nome: string) => {
+      if (nome === 'pos_agendamentos') return { doc: textosDoc }
+      if (nome === 'configuracao') return { doc: configuracaoDoc }
+      throw new Error(`collection inesperada: ${nome}`)
+    })
+    getFirestore.mockReturnValueOnce({ collection })
+    const store = new FirestoreAgendamentoStore()
+
+    const resultado = await store.carregarConfiguracaoSucesso()
+
+    expect(collection).toHaveBeenCalledWith('pos_agendamentos')
+    expect(textosDoc).toHaveBeenCalledWith('textos')
+    expect(collection).toHaveBeenCalledWith('configuracao')
+    expect(configuracaoDoc).toHaveBeenCalledWith('pos-agendamentos')
+    expect(resultado).toEqual({
+      titulo: 'Solicitação recebida pela CrossHill',
+      descricao: 'A equipe vai confirmar seu horário pelo telefone informado.',
+      regras: [],
+      dicas: ['Leve uma garrafa de água.', 'Chegue com alguns minutos de antecedência.'],
+      avisos: ['A solicitação ainda será confirmada pela equipe.'],
+    })
+  })
+
+  it('carregarConfiguracaoSucesso tolera caminhos alternativos e aliases de listas configuráveis', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const snapshots = new Map([
+      [
+        'pos_agendamento/textos',
+        {
+          exists: true,
+          data: () => ({
+            titulo: 'Tudo certo por aqui',
+            descricao: 'Recebemos sua solicitação.',
+          }),
+        },
+      ],
+      [
+        'configuracao/pos-agendamento',
+        {
+          exists: true,
+          data: () => ({
+            listaDicas: [{ texto: 'Confirme seus dados no telefone.' }],
+            listaAvisos: 'A equipe ainda vai confirmar.\nNão considere o horário garantido.',
+          }),
+        },
+      ],
+    ])
+    const collection = vi.fn((colecao: string) => ({
+      doc: vi.fn((documento: string) => ({
+        get: vi.fn().mockResolvedValue(
+          snapshots.get(`${colecao}/${documento}`) ?? {
+            exists: false,
+            data: () => undefined,
+          }
+        ),
+      })),
+    }))
+    getFirestore.mockReturnValueOnce({ collection })
+    const store = new FirestoreAgendamentoStore()
+
+    try {
+      const resultado = await store.carregarConfiguracaoSucesso()
+
+      expect(resultado).toEqual({
+        titulo: 'Tudo certo por aqui',
+        descricao: 'Recebemos sua solicitação.',
+        regras: [],
+        dicas: ['Confirme seus dados no telefone.'],
+        avisos: ['A equipe ainda vai confirmar.', 'Não considere o horário garantido.'],
+      })
+    } finally {
+      consoleInfo.mockRestore()
+    }
+  })
+})
+
 /**
  * CAUSA-RAIZ: `profissionalId` e `data` chegam de payload público e são usados como (parte de) ID
  * de documento Firestore — `.doc(profissionalId)` e `.doc(`{profissionalId}_{data}`)`. Como

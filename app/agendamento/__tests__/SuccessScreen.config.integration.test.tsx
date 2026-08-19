@@ -43,8 +43,8 @@ beforeEach(() => {
         titulo: 'Solicitação recebida',
         descricao: 'Seu horário está aguardando confirmação administrativa pela equipe.',
         regras: [],
-        dicas: [],
-        avisos: [],
+        dicas: ['Leve uma garrafa de água.'],
+        avisos: ['A solicitação ainda será confirmada pela equipe.'],
       })
     )
   )
@@ -110,6 +110,10 @@ describe('AppointmentFlow — envio e sucesso', () => {
 
     expect(await screen.findByRole('heading', { name: 'Solicitação recebida' })).toBeInTheDocument()
     expect(screen.getByText('Seu horário está aguardando confirmação administrativa pela equipe.')).toBeInTheDocument()
+    expect(screen.getByText('Dicas')).toBeInTheDocument()
+    expect(screen.getByText('Leve uma garrafa de água.')).toBeInTheDocument()
+    expect(screen.getByText('Avisos importantes')).toBeInTheDocument()
+    expect(screen.getByText('A solicitação ainda será confirmada pela equipe.')).toBeInTheDocument()
     expect(screen.queryByText('Agendamento solicitado!')).toBeNull()
     expect(screen.queryByText('solicitacao-interna-nao-exibida')).toBeNull()
     expect(screen.queryByText(/horário confirmado/i)).toBeNull()

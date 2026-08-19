@@ -11,7 +11,13 @@
  */
 import { carregarConfiguracaoSucesso } from '@/lib/firebase/agendamentoStore'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const configuracao = await carregarConfiguracaoSucesso()
-  return Response.json(configuracao)
+  return Response.json(configuracao, {
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  })
 }

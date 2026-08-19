@@ -53,7 +53,7 @@ function paraConfiguracaoSucesso(item: unknown): ConfiguracaoSucesso | null {
 async function buscarSucesso(): Promise<ResultadoRepository<ConfiguracaoSucesso>> {
   let response: Response
   try {
-    response = await fetch(urlPublica(CAMINHO_CONFIGURACAO_SUCESSO))
+    response = await fetch(urlPublica(CAMINHO_CONFIGURACAO_SUCESSO), { cache: 'no-store' })
   } catch {
     return { ok: false, erro: { tipo: 'REDE' } }
   }

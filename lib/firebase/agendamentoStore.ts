@@ -47,7 +47,20 @@ const NOME_COLECAO_DISPONIBILIDADE = 'disponibilidade'
 const NOME_COLECAO_AGENDAMENTOS = 'agendamentos'
 const NOME_COLECAO_CONFIGURACOES = 'configuracoes'
 const ID_DOCUMENTO_CONFIGURACAO_PROFISSIONAL = 'profissional'
-const ID_DOCUMENTO_CONFIGURACAO_SUCESSO = 'sucessoPublico'
+const CAMINHOS_TEXTOS_POS_AGENDAMENTO = [
+  'pos_agendamento/textos',
+  'pos_agendamentos/textos',
+] as const
+const CAMINHOS_CONFIGURACAO_POS_AGENDAMENTO = [
+  'configuracao/pos-agendamentos',
+  'configuracao/pos-agendamento',
+  'configuracao/pos_agendamentos',
+  'configuracao/pos_agendamento',
+  `${NOME_COLECAO_CONFIGURACOES}/pos-agendamentos`,
+  `${NOME_COLECAO_CONFIGURACOES}/pos-agendamento`,
+  `${NOME_COLECAO_CONFIGURACOES}/pos_agendamentos`,
+  `${NOME_COLECAO_CONFIGURACOES}/pos_agendamento`,
+] as const
 
 /**
  * Status que contam como Solicitação de Agendamento ATIVA no dia para a regra de duplicidade
@@ -102,9 +115,10 @@ export function formatarLabelDia(data: string): string {
   const diaSemana = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
     .format(referencia)
     .replace(/\.$/, '')
-  const diaMes = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(
-    referencia
-  )
+  const diaMes = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+  }).format(referencia)
   return `${diaSemana.charAt(0).toUpperCase()}${diaSemana.slice(1)}, ${diaMes}`
 }
 
@@ -121,6 +135,85 @@ function lerSlots(dados: unknown): Record<string, unknown> {
   return slots && typeof slots === 'object' && !Array.isArray(slots)
     ? (slots as Record<string, unknown>)
     : {}
+}
+
+function lerStringNaoVazia(dados: unknown, campo: string): string | undefined {
+  if (!dados || typeof dados !== 'object') return undefined
+  const valor = (dados as Record<string, unknown>)[campo]
+  return typeof valor === 'string' && valor.trim() ? valor : undefined
+}
+
+function lerItemTexto(valor: unknown): string | undefined {
+  if (typeof valor === 'string') return valor
+  if (!valor || typeof valor !== 'object') return undefined
+
+  const item = valor as Record<string, unknown>
+  return (
+    lerStringNaoVazia(item, 'texto') ??
+    lerStringNaoVazia(item, 'descricao') ??
+    lerStringNaoVazia(item, 'mensagem') ??
+    lerStringNaoVazia(item, 'valor')
+  )
+}
+
+function lerListaDeStrings(dados: unknown, campos: readonly string[]): string[] {
+  if (!dados || typeof dados !== 'object') return []
+  const bruto = dados as Record<string, unknown>
+  const valor = campos.map((campo) => bruto[campo]).find((item) => item !== undefined)
+
+  if (Array.isArray(valor)) {
+    return valor
+      .map(lerItemTexto)
+      .filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+  }
+
+  if (typeof valor === 'string') {
+    return valor
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  return []
+}
+
+function camposPresentes(dados: unknown): string[] {
+  return dados && typeof dados === 'object'
+    ? Object.keys(dados as Record<string, unknown>).sort()
+    : []
+}
+
+async function lerPrimeiroDocumentoExistente(
+  firestore: ReturnType<typeof getFirestore>,
+  caminhos: readonly string[],
+): Promise<{
+  caminho: string | null
+  caminhosVerificados: string[]
+  dados: unknown
+}> {
+  const snapshots = await Promise.allSettled(
+    caminhos.map(async (caminho) => {
+      const [colecao, documento] = caminho.split('/')
+      const snapshot = await firestore.collection(colecao).doc(documento).get()
+      return { caminho, snapshot }
+    }),
+  )
+
+  for (const resultado of snapshots) {
+    if (resultado.status === 'fulfilled' && resultado.value.snapshot.exists) {
+      return {
+        caminho: resultado.value.caminho,
+        caminhosVerificados: [...caminhos],
+        dados: resultado.value.snapshot.data(),
+      }
+    }
+  }
+
+  return {
+    caminho: null,
+    caminhosVerificados: [...caminhos],
+    dados: undefined,
+  }
 }
 
 /**
@@ -178,7 +271,9 @@ export interface AgendamentoStore {
    * inelegível ou slot já `CONFIRMADO`) ou `TelefoneDuplicadoNoDiaError` sem criar documento algum
    * quando uma regra falha — nunca há escrita parcial.
    */
-  criarSolicitacaoAgendamento(dto: CriarSolicitacaoAgendamentoDTO): Promise<SolicitacaoAgendamentoDTO>
+  criarSolicitacaoAgendamento(
+    dto: CriarSolicitacaoAgendamentoDTO,
+  ): Promise<SolicitacaoAgendamentoDTO>
   /** Textos públicos da tela de sucesso, com fallback seguro (RN-14). */
   carregarConfiguracaoSucesso(): Promise<ConfiguracaoSucesso>
 }
@@ -267,12 +362,17 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
       .map((doc) => doc.id)
 
     return diasComDisponibilidade
-      .filter((data, index, lista) => /^\d{4}-\d{2}-\d{2}$/.test(data) && lista.indexOf(data) === index)
+      .filter(
+        (data, index, lista) => /^\d{4}-\d{2}-\d{2}$/.test(data) && lista.indexOf(data) === index,
+      )
       .sort((a, b) => a.localeCompare(b))
       .map((data) => ({ data, label: formatarLabelDia(data) }))
   }
 
-  async listarHorariosElegiveis(profissionalId: string, data: string): Promise<HorarioDisponivel[]> {
+  async listarHorariosElegiveis(
+    profissionalId: string,
+    data: string,
+  ): Promise<HorarioDisponivel[]> {
     const firestore = this.firestore()
     const profissionalIdSeguro = comoIdDeDocumento(profissionalId, 'profissionalId')
     const dataSegura = comoIdDeDocumento(data, 'data')
@@ -293,42 +393,79 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
 
   async carregarConfiguracaoSucesso(): Promise<ConfiguracaoSucesso> {
     try {
-      const snapshot = await this.firestore()
-        .collection(NOME_COLECAO_CONFIGURACOES)
-        .doc(ID_DOCUMENTO_CONFIGURACAO_SUCESSO)
-        .get()
+      const firestore = this.firestore()
+      const [textosResultado, configuracaoResultado] = await Promise.allSettled([
+        lerPrimeiroDocumentoExistente(firestore, CAMINHOS_TEXTOS_POS_AGENDAMENTO),
+        lerPrimeiroDocumentoExistente(firestore, CAMINHOS_CONFIGURACAO_POS_AGENDAMENTO),
+      ])
 
-      if (!snapshot.exists) {
-        return CONFIGURACAO_SUCESSO_FALLBACK
+      const textos =
+        textosResultado.status === 'fulfilled' ? textosResultado.value.dados : undefined
+      const configuracao =
+        configuracaoResultado.status === 'fulfilled' ? configuracaoResultado.value.dados : undefined
+      if (textosResultado.status === 'rejected' || configuracaoResultado.status === 'rejected') {
+        console.error(
+          '[agendamentoStore] falha parcial ao ler configuração pública de pós-agendamento',
+          {
+            textos: textosResultado.status,
+            configuracao: configuracaoResultado.status,
+          },
+        )
       }
-
-      const dados = snapshot.data() as Partial<ConfiguracaoSucesso> | undefined
-      if (!dados?.titulo || !dados.descricao) {
-        return CONFIGURACAO_SUCESSO_FALLBACK
-      }
+      console.info('[agendamentoStore] configuração pública de pós-agendamento carregada', {
+        textos:
+          textosResultado.status === 'fulfilled'
+            ? {
+                caminho: textosResultado.value.caminho,
+                caminhosVerificados: textosResultado.value.caminhosVerificados,
+                campos: camposPresentes(textos),
+              }
+            : { caminho: null, campos: [] },
+        configuracao:
+          configuracaoResultado.status === 'fulfilled'
+            ? {
+                caminho: configuracaoResultado.value.caminho,
+                caminhosVerificados: configuracaoResultado.value.caminhosVerificados,
+                campos: camposPresentes(configuracao),
+              }
+            : { caminho: null, campos: [] },
+      })
+      const titulo = lerStringNaoVazia(textos, 'titulo') ?? CONFIGURACAO_SUCESSO_FALLBACK.titulo
+      const descricao =
+        lerStringNaoVazia(textos, 'descricao') ?? CONFIGURACAO_SUCESSO_FALLBACK.descricao
+      const dicas = lerListaDeStrings(configuracao, [
+        'dicas',
+        'listaDicas',
+        'lista_dicas',
+        'lista de dicas',
+      ])
+      const avisos = lerListaDeStrings(configuracao, [
+        'avisos',
+        'listaAvisos',
+        'lista_avisos',
+        'lista de avisos',
+      ])
 
       return {
-        titulo: dados.titulo,
-        descricao: dados.descricao,
-        regras: dados.regras ?? [],
-        dicas: dados.dicas ?? [],
-        avisos: dados.avisos ?? [],
+        titulo,
+        descricao,
+        regras: [],
+        dicas,
+        avisos,
       }
     } catch (erro) {
-      // Erro de leitura (rede, permissão, documento corrompido) usa o fallback seguro em vez de
-      // propagar — a tela de sucesso nunca pode ficar bloqueada por configuração de texto. O log
-      // evita que a falha fique invisível (o projeto ainda não tem logger estruturado); nada do
-      // erro chega ao cliente, que recebe apenas os textos de fallback.
+      // Erro inesperado na montagem usa o fallback seguro em vez de propagar — a tela de sucesso
+      // nunca pode ficar bloqueada por configuração de texto. O log evita que a falha fique
+      // invisível (o projeto ainda não tem logger estruturado); nada do erro chega ao cliente.
       console.error(
-        `[agendamentoStore] falha ao ler ${NOME_COLECAO_CONFIGURACOES}/${ID_DOCUMENTO_CONFIGURACAO_SUCESSO}; usando fallback`,
-        erro
+        `[agendamentoStore] falha ao montar configuração pública de pós-agendamento; usando fallback`,
+        erro,
       )
       return CONFIGURACAO_SUCESSO_FALLBACK
     }
   }
-
   async criarSolicitacaoAgendamento(
-    dto: CriarSolicitacaoAgendamentoDTO
+    dto: CriarSolicitacaoAgendamentoDTO,
   ): Promise<SolicitacaoAgendamentoDTO> {
     comoIdDeDocumento(dto.profissionalId, 'profissionalId')
     comoIdDeDocumento(dto.data, 'data')
@@ -353,12 +490,11 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
 
       // Transações Firestore exigem que TODAS as leituras ocorram antes de qualquer escrita —
       // por isso as leituras abaixo rodam concorrentemente e só depois vêm as duas escritas.
-      const [profissionalSnap, disponibilidadeSnap, telefoneDuplicadoSnap] =
-        await Promise.all([
-          transaction.get(profissionalRef),
-          transaction.get(disponibilidadeRef),
-          transaction.get(telefoneDuplicadoQuery),
-        ])
+      const [profissionalSnap, disponibilidadeSnap, telefoneDuplicadoSnap] = await Promise.all([
+        transaction.get(profissionalRef),
+        transaction.get(disponibilidadeRef),
+        transaction.get(telefoneDuplicadoQuery),
+      ])
 
       // Elegibilidade (§8.3): o endpoint público não tem autenticação, então o horário é
       // reconferido contra a disponibilidade dentro da MESMA transação — checar fora reabriria a
@@ -384,7 +520,7 @@ export class FirestoreAgendamentoStore implements AgendamentoStore {
       transaction.update(
         disponibilidadeRef,
         new FieldPath('slots', dto.horario, 'agendamentoId'),
-        novoDocumentoRef.id
+        novoDocumentoRef.id,
       )
       transaction.set(novoDocumentoRef, {
         nomeCliente: dto.nomeCliente,
@@ -428,13 +564,13 @@ export function listarDiasLiberados(profissionalId: string): Promise<DiaDisponiv
 
 export function listarHorariosElegiveis(
   profissionalId: string,
-  data: string
+  data: string,
 ): Promise<HorarioDisponivel[]> {
   return getStore().listarHorariosElegiveis(profissionalId, data)
 }
 
 export function criarSolicitacaoAgendamento(
-  dto: CriarSolicitacaoAgendamentoDTO
+  dto: CriarSolicitacaoAgendamentoDTO,
 ): Promise<SolicitacaoAgendamentoDTO> {
   return getStore().criarSolicitacaoAgendamento(dto)
 }

@@ -36,6 +36,7 @@ describe('GET /api/public/configuracao/sucesso', () => {
     const body = await response.json()
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
     expect(body).toEqual(configuracao)
     expect(Object.keys(body)).toEqual(['titulo', 'descricao', 'regras', 'dicas', 'avisos'])
     // Textos públicos são sempre string simples — nenhuma marcação HTML/script deve sobreviver
